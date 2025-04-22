@@ -6,74 +6,74 @@
 //
 
 import SwiftUI
-import Charts
 
 struct ContentView: View {
-    @StateObject private var measurementStore = MeasurementStore()
+    @StateObject private var weightService = WeightService()
     @StateObject private var bluetoothManager: BluetoothManager
     @State private var showingDeviceSheet = false
     
     init() {
-        // Create a single MeasurementStore instance
-        let store = MeasurementStore()
-        // Pass the same store instance to BluetoothManager
-        _bluetoothManager = StateObject(wrappedValue: BluetoothManager(measurementStore: store))
-        // Use the same store instance for the view
-        _measurementStore = StateObject(wrappedValue: store)
+        let service = WeightService()
+        _weightService = StateObject(wrappedValue: service)
+        _bluetoothManager = StateObject(wrappedValue: BluetoothManager(weightService: service))
     }
     
     var body: some View {
-        VStack {
-            HStack {
-                Circle()
-                    .fill(connectionStateColor)
-                    .frame(width: 10, height: 10)
-                Text(connectionStateText)
-            }
-            .padding()
-            
-            Text("Current Weight: \(String(format: "%.1f", bluetoothManager.currentWeight)) kg")
-                .font(.title)
-            
-            Text("Max Weight: \(String(format: "%.1f", measurementStore.maxWeight)) kg")
-                .font(.title2)
-                .foregroundColor(.secondary)
-            
-            // Debug text to show measurement count
-            Text("Measurements: \(measurementStore.measurements.count)")
-                .font(.caption)
-                .foregroundColor(.gray)
-            
-            if measurementStore.measurements.isEmpty {
-                Text("No measurements yet")
-                    .foregroundColor(.gray)
-                    .padding()
-            } else {
-                Chart(measurementStore.measurements) { measurement in
-                    LineMark(
-                        x: .value("Time", measurement.timestamp),
-                        y: .value("Weight", measurement.weight)
-                    )
+        NavigationView {
+            VStack(spacing: 20) {
+                // Main navigation buttons
+                VStack(spacing: 30) {
+                    NavigationLink {
+                        MaxForceView(
+                            bluetoothManager: bluetoothManager,
+                            weightService: weightService
+                        )
+                    } label: {
+                        HomeButtonView(
+                            title: "Max Force",
+                            icon: "chart.bar.fill",
+                            description: "Measure your maximum finger strength"
+                        )
+                    }
+                    
+                    NavigationLink{
+                        ComingSoonView()
+                    } label: {
+                        HomeButtonView(
+                            title: "Critical Force",
+                            icon: "bolt.fill",
+                            description: "Measure your critical force"
+                        )
+                    }
                 }
-                .frame(height: 300)
                 .padding()
-            }
-            
-            Button(action: {
-                switch bluetoothManager.connectionState {
-                case .disconnected:
-                    bluetoothManager.startScanning()
-                    showingDeviceSheet = true
-                case .scanning:
-                    bluetoothManager.stopScanning()
-                    showingDeviceSheet = false
-                case .connected:
-                    bluetoothManager.disconnect()
+                
+                // Connection status and button
+                Button(action: {
+                    switch bluetoothManager.connectionState {
+                    case .disconnected:
+                        bluetoothManager.startScanning()
+                        showingDeviceSheet = true
+                    case .scanning:
+                        bluetoothManager.stopScanning()
+                        showingDeviceSheet = false
+                    case .connected:
+                        bluetoothManager.disconnect()
+                    }
+                }) {
+                    HStack {
+                        Circle()
+                            .fill(connectionStateColor)
+                            .frame(width: 10, height: 10)
+                        Text(connectionStateText)
+                    }
+                    .padding()
                 }
-            }) {
-                Text(buttonTitle)
+                .padding(.top)
+                
+                Spacer()
             }
-            .padding()
+            .navigationTitle("Hang On")
         }
         .sheet(isPresented: $showingDeviceSheet) {
             DeviceSelectionView(
@@ -84,17 +84,6 @@ struct ContentView: View {
                     showingDeviceSheet = false
                 }
             )
-        }
-    }
-    
-    private var buttonTitle: String {
-        switch bluetoothManager.connectionState {
-        case .disconnected:
-            return "Scan for Devices"
-        case .scanning:
-            return "Cancel"
-        case .connected:
-            return "Disconnect"
         }
     }
     
@@ -118,6 +107,51 @@ struct ContentView: View {
         case .disconnected:
             return "Disconnected"
         }
+    }
+}
+
+struct HomeButtonView: View {
+    let title: String
+    let icon: String
+    let description: String
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(.title2)
+                    .bold()
+                Text(description)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            Image(systemName: icon)
+                .font(.system(size: 30))
+                .foregroundColor(.blue)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(radius: 2)
+    }
+}
+
+struct ComingSoonView: View {
+    var body: some View {
+        VStack {
+            Image(systemName: "hammer.fill")
+                .font(.system(size: 60))
+                .padding()
+            Text("Coming Soon!")
+                .font(.title)
+            Text("We're working hard to bring you this feature.")
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding()
+        }
+        .navigationTitle("Critical Force")
     }
 }
 

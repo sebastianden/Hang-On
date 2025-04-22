@@ -9,7 +9,6 @@ import CoreBluetooth
 import Combine
 
 class BluetoothManager: NSObject, ObservableObject {
-    @Published var currentWeight: Double = 0.0
     @Published var isScanning: Bool = false
     @Published var discoveredDevices: [Device] = []
     @Published var connectionState: ConnectionState = .disconnected
@@ -21,11 +20,11 @@ class BluetoothManager: NSObject, ObservableObject {
     }
     
     private var centralManager: CBCentralManager?
-    private var measurementStore: MeasurementStore
     private var selectedPeripheral: CBPeripheral?
+    private var weightService: WeightService
     
-    init(measurementStore: MeasurementStore) {
-        self.measurementStore = measurementStore
+    init(weightService: WeightService) {
+        self.weightService = weightService
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
@@ -122,7 +121,8 @@ extension BluetoothManager: CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        guard let name = peripheral.name, name.contains("IF_B7") else { return }
+        
+        guard let name = peripheral.name, name.contains("IF") else { return }
         
         // Add device if not already discovered
         if !discoveredDevices.contains(where: { ($0.peripheral as? CBPeripheral)?.identifier == peripheral.identifier }) {
@@ -161,12 +161,9 @@ extension BluetoothManager: CBCentralManagerDelegate {
             
             if let (weight, stable, _) = decodeWeight(from: scaleData) {
                 print("Processing weight: \(weight)kg (stable: \(stable))")
+                
                 DispatchQueue.main.async {
-                    self.currentWeight = weight
-                    // Add all measurements, including zero values
-                    print("Adding measurement to store")
-                    self.measurementStore.addMeasurement(weight: weight)
-                    print("Current measurement count: \(self.measurementStore.measurements.count)")
+                    self.weightService.addMeasurement(weight)
                 }
             }
         }
