@@ -11,11 +11,23 @@ import Charts
 struct MaxForceView: View {
     @ObservedObject var bluetoothManager: BluetoothManager
     @ObservedObject var weightService: WeightService
+    @Environment(\.presentationMode) var presentationMode
+    @StateObject private var workoutStorage = WorkoutStorage()
+    
+    let selectedHand: Workout.Hand
+    
+    @State private var showingSaveAlert = false
+    @State private var isRecording = false
     
     var body: some View {
         VStack {
+            Text("Selected Hand: \(selectedHand.rawValue.capitalized)")
+                .font(.headline)
+                .padding()
+            
             Text("Current Weight: \(String(format: "%.2f", weightService.currentWeight)) kg")
                 .font(.title)
+            
             Text("Max Weight: \(String(format: "%.2f", weightService.maxWeight)) kg")
                 .font(.title2)
                 .foregroundColor(.secondary)
@@ -35,7 +47,52 @@ struct MaxForceView: View {
                 .frame(height: 300)
                 .padding()
             }
+            
+            Button(action: {
+                if isRecording {
+                    stopRecording()
+                    showingSaveAlert = true
+                } else {
+                    startRecording()
+                }
+            }) {
+                Text(isRecording ? "Finish" : "Start Recording")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(isRecording ? Color.red : Color.blue)
+                    .cornerRadius(10)
+            }
+            .padding()
         }
         .navigationTitle("Max Force")
+        .alert("Save Workout", isPresented: $showingSaveAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Save") {
+                saveWorkout()
+                presentationMode.wrappedValue.dismiss()
+            }
+        } message: {
+            Text("Do you want to save this workout?")
+        }
+    }
+    
+    private func startRecording() {
+        isRecording = true
+        weightService.startRecording()
+    }
+    
+    private func stopRecording() {
+        isRecording = false
+        weightService.stopRecording()
+    }
+    
+    private func saveWorkout() {
+        let workout = Workout(
+            hand: selectedHand,
+            maxForce: weightService.maxWeight
+        )
+        workoutStorage.saveWorkout(workout)
     }
 }

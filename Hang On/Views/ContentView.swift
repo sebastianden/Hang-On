@@ -17,17 +17,14 @@ struct ContentView: View {
         _weightService = StateObject(wrappedValue: service)
         _bluetoothManager = StateObject(wrappedValue: BluetoothManager(weightService: service))
     }
-    
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 20) {
                 // Main navigation buttons
                 VStack(spacing: 30) {
                     NavigationLink {
-                        MaxForceView(
-                            bluetoothManager: bluetoothManager,
-                            weightService: weightService
-                        )
+                        WorkoutHistoryView()
                     } label: {
                         HomeButtonView(
                             title: "Max Force",
@@ -75,6 +72,8 @@ struct ContentView: View {
             }
             .navigationTitle("Hang On")
         }
+        .environmentObject(bluetoothManager)
+        .environmentObject(weightService)
         .sheet(isPresented: $showingDeviceSheet) {
             DeviceSelectionView(
                 devices: bluetoothManager.discoveredDevices,
