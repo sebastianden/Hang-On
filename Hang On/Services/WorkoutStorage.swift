@@ -8,6 +8,8 @@
 import Foundation
 
 class WorkoutStorage: ObservableObject {
+    static let shared = WorkoutStorage() // Add singleton instance
+    
     @Published private(set) var workouts: [Workout] = []
     private let userDefaults = UserDefaults.standard
     private let workoutsKey = "savedWorkouts"
@@ -17,8 +19,10 @@ class WorkoutStorage: ObservableObject {
     }
     
     func saveWorkout(_ workout: Workout) {
-        workouts.append(workout)
-        saveToStorage()
+        DispatchQueue.main.async {
+            self.workouts.append(workout)
+            self.saveToStorage()
+        }
     }
     
     func deleteWorkout(_ workout: Workout) {

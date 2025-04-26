@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 
+// WeightService.swift
 class WeightService: ObservableObject {
     @Published var currentWeight: Double = 0.0
     @Published var measurements: [Measurement] = [] {
@@ -32,11 +33,15 @@ class WeightService: ObservableObject {
     }
 
     func stopRecording() {
+        print("Stopping recording")
         isRecording = false
     }
 
     func addMeasurement(_ weight: Double) {
-        guard isRecording else { return }
+        guard isRecording else {
+            print("Measurement ignored - not recording")
+            return
+        }
         print("Adding measurement: \(weight)")
         let measurement = Measurement(weight: weight, timestamp: Date())
         DispatchQueue.main.async {

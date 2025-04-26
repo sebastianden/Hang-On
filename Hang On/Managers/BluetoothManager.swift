@@ -36,7 +36,6 @@ class BluetoothManager: NSObject, ObservableObject {
         }
         print("Starting to scan for devices...")
         isScanning = true
-        // Only update connection state to scanning if we're not already connected
         if connectionState != .connected {
             connectionState = .scanning
         }
@@ -57,11 +56,11 @@ class BluetoothManager: NSObject, ObservableObject {
         print("Attempting to connect to device: \(device.name)")
         selectedPeripheral = peripheral
         DispatchQueue.main.async {
-            self.connectionState = .connected  // Update state when connecting
+            self.connectionState = .connected
         }
         centralManager?.connect(peripheral, options: nil)
     }
-
+    
     func disconnect() {
         if let peripheral = selectedPeripheral {
             print("Disconnecting from device")
@@ -121,7 +120,6 @@ extension BluetoothManager: CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        
         guard let name = peripheral.name, name.contains("IF") else { return }
         
         // Add device if not already discovered
@@ -132,12 +130,11 @@ extension BluetoothManager: CBCentralManagerDelegate {
             }
         }
         
-        // Process weight data if this is our selected peripheral
-        if peripheral == selectedPeripheral {
+        // Only process weight data if this is our selected peripheral AND we're recording
+        if peripheral == selectedPeripheral && weightService.isRecording {
             print("Processing data from selected peripheral: \(name)")
             // Get manufacturer data
             guard let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data else {
-                print("No manufacturer data found")
                 return
             }
             
@@ -155,13 +152,11 @@ extension BluetoothManager: CBCentralManagerDelegate {
             
             // Check for company ID 256 (0x0100)
             guard let scaleData = companies[256] else {
-                print("No data for company ID 256")
                 return
             }
             
             if let (weight, stable, _) = decodeWeight(from: scaleData) {
                 print("Processing weight: \(weight)kg (stable: \(stable))")
-                
                 DispatchQueue.main.async {
                     self.weightService.addMeasurement(weight)
                 }

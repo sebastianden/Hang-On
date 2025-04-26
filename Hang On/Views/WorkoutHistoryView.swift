@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct WorkoutHistoryView: View {
-    @StateObject private var workoutStorage = WorkoutStorage()
+    @StateObject private var workoutStorage = WorkoutStorage.shared
     @State private var showingHandSelection = false
     @State private var selectedHand: Workout.Hand?
     @EnvironmentObject var bluetoothManager: BluetoothManager
@@ -50,7 +50,7 @@ struct WorkoutHistoryView: View {
         }
         .navigationDestination(isPresented: Binding(
             get: { selectedHand != nil },
-            set: { if !$0 { selectedHand = nil } }
+            set: { if !$0 { selectedHand = nil }}
         )) {
             if let hand = selectedHand {
                 MaxForceView(

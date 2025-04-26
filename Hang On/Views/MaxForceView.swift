@@ -11,8 +11,7 @@ import Charts
 struct MaxForceView: View {
     @ObservedObject var bluetoothManager: BluetoothManager
     @ObservedObject var weightService: WeightService
-    @Environment(\.presentationMode) var presentationMode
-    @StateObject private var workoutStorage = WorkoutStorage()
+    @Environment(\.dismiss) var dismiss
     
     let selectedHand: Workout.Hand
     
@@ -71,7 +70,7 @@ struct MaxForceView: View {
             Button("Cancel", role: .cancel) { }
             Button("Save") {
                 saveWorkout()
-                presentationMode.wrappedValue.dismiss()
+                dismiss()
             }
         } message: {
             Text("Do you want to save this workout?")
@@ -93,6 +92,7 @@ struct MaxForceView: View {
             hand: selectedHand,
             maxForce: weightService.maxWeight
         )
-        workoutStorage.saveWorkout(workout)
+        WorkoutStorage.shared.saveWorkout(workout)
+        stopRecording()
     }
 }
