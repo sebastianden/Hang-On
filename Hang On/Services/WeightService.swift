@@ -8,7 +8,6 @@
 import Foundation
 import Combine
 
-// WeightService.swift
 class WeightService: ObservableObject {
     @Published var currentWeight: Double = 0.0
     @Published var measurements: [Measurement] = [] {
@@ -27,9 +26,9 @@ class WeightService: ObservableObject {
 
     func startRecording() {
         isRecording = true
-        measurements.removeAll()
-        maxWeight = 0.0
-        currentWeight = 0.0
+        measurements.removeAll()  // Clear old measurements
+        maxWeight = 0.0          // Reset max weight
+        currentWeight = 0.0      // Reset current weight
     }
 
     func stopRecording() {
@@ -49,5 +48,12 @@ class WeightService: ObservableObject {
             self.measurements.append(measurement)
             print("Added measurement. New count: \(self.measurements.count)")
         }
+    }
+    
+    func reset() {
+        measurements.removeAll()
+        maxWeight = 0.0
+        currentWeight = 0.0
+        isRecording = false
     }
 }

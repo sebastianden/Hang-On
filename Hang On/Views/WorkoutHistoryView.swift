@@ -29,6 +29,7 @@ struct WorkoutHistoryView: View {
             }
             
             Button(action: {
+                weightService.reset()  // Reset before showing hand selection
                 showingHandSelection = true
             }) {
                 Text("Start New Measurement")
@@ -50,7 +51,10 @@ struct WorkoutHistoryView: View {
         }
         .navigationDestination(isPresented: Binding(
             get: { selectedHand != nil },
-            set: { if !$0 { selectedHand = nil }}
+            set: { if !$0 {
+                selectedHand = nil
+                weightService.reset()  // Reset when navigation state changes
+            }}
         )) {
             if let hand = selectedHand {
                 MaxForceView(

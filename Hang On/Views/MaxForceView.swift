@@ -8,6 +8,7 @@
 import SwiftUI
 import Charts
 
+// MaxForceView.swift
 struct MaxForceView: View {
     @ObservedObject var bluetoothManager: BluetoothManager
     @ObservedObject var weightService: WeightService
@@ -70,10 +71,12 @@ struct MaxForceView: View {
             Button("Cancel", role: .cancel) { }
             Button("Save") {
                 saveWorkout()
-                dismiss()
             }
         } message: {
             Text("Do you want to save this workout?")
+        }
+        .onDisappear {
+            weightService.reset()  // Reset service when view disappears
         }
     }
     
@@ -94,5 +97,6 @@ struct MaxForceView: View {
         )
         WorkoutStorage.shared.saveWorkout(workout)
         stopRecording()
+        dismiss()
     }
 }
