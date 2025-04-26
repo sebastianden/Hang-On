@@ -34,7 +34,6 @@ struct WorkoutHistoryView: View {
             }
             
             Button(action: {
-                weightService.reset()
                 showingHandSelection = true
             }) {
                 Text("Start New Measurement")

@@ -24,10 +24,10 @@ struct MaxForceView: View {
                 .font(.headline)
                 .padding()
             
-            Text("Current Weight: \(String(format: "%.2f", weightService.currentWeight)) kg")
+            Text("Current Force: \(String(format: "%.2f", weightService.currentWeight)) kg")
                 .font(.title)
             
-            Text("Max Weight: \(String(format: "%.2f", weightService.maxWeight)) kg")
+            Text("Max Force: \(String(format: "%.2f", weightService.maxWeight)) kg")
                 .font(.title2)
                 .foregroundColor(.secondary)
             
@@ -74,6 +74,7 @@ struct MaxForceView: View {
         } message: {
             Text("Do you want to save this workout?")
         }
+        .interactiveDismissDisabled(isRecording)
     }
     
     private func startRecording() {
@@ -92,7 +93,9 @@ struct MaxForceView: View {
             maxForce: weightService.maxWeight
         )
         WorkoutStorage.shared.saveWorkout(workout)
-        stopRecording()
-        dismiss()
+        weightService.reset()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            dismiss()  // dismiss with a slight delay
+        }
     }
 }

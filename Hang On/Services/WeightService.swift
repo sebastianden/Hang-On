@@ -25,6 +25,7 @@ class WeightService: ObservableObject {
     }
 
     func startRecording() {
+        print("Starting recording")
         isRecording = true
         measurements.removeAll()  // Clear old measurements
         maxWeight = 0.0          // Reset max weight
@@ -41,12 +42,12 @@ class WeightService: ObservableObject {
             print("Measurement ignored - not recording")
             return
         }
-        print("Adding measurement: \(weight)")
+        //print("Adding measurement: \(weight)")
         let measurement = Measurement(weight: weight, timestamp: Date())
         DispatchQueue.main.async {
             self.currentWeight = weight
             self.measurements.append(measurement)
-            print("Added measurement. New count: \(self.measurements.count)")
+            //print("Added measurement. New count: \(self.measurements.count)")
         }
     }
     

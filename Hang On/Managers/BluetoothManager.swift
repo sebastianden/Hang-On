@@ -73,7 +73,7 @@ class BluetoothManager: NSObject, ObservableObject {
     }
     
     private func decodeWeight(from manufacturerData: Data) -> (weight: Double, stable: Int, unit: Int)? {
-        print("Raw manufacturer data: \(manufacturerData.map { String(format: "%02X", $0) }.joined())")
+        //print("Raw manufacturer data: \(manufacturerData.map { String(format: "%02X", $0) }.joined())")
         
         guard manufacturerData.count >= 15 else {
             print("Manufacturer data too short")
@@ -81,18 +81,18 @@ class BluetoothManager: NSObject, ObservableObject {
         }
         
         // Print individual bytes for debugging
-        print("Weight bytes: \(String(format: "%02X", manufacturerData[10])) \(String(format: "%02X", manufacturerData[11]))")
-        print("Status byte: \(String(format: "%02X", manufacturerData[14]))")
+        //print("Weight bytes: \(String(format: "%02X", manufacturerData[10])) \(String(format: "%02X", manufacturerData[11]))")
+        //print("Status byte: \(String(format: "%02X", manufacturerData[14]))")
         
         let weight = ((Int(manufacturerData[10]) & 0xff) << 8) | (Int(manufacturerData[11]) & 0xff)
         let statusByte = manufacturerData[14]
         let stable = Int((statusByte & 0xf0) >> 4)
         let unit = Int(statusByte & 0x0f)
         
-        print("Status byte decoded: stable=\(stable) (raw: \(String(format: "%04b", stable))), unit=\(unit) (raw: \(String(format: "%04b", unit)))")
+        //print("Status byte decoded: stable=\(stable) (raw: \(String(format: "%04b", stable))), unit=\(unit) (raw: \(String(format: "%04b", unit)))")
         
         let weightKg = Double(weight) / 100.0
-        print("Decoded: weight=\(weightKg)kg, stable=\(stable), unit=\(unit)")
+        //print("Decoded: weight=\(weightKg)kg, stable=\(stable), unit=\(unit)")
         
         return (weightKg, stable, unit)
     }
@@ -132,7 +132,7 @@ extension BluetoothManager: CBCentralManagerDelegate {
         
         // Only process weight data if this is our selected peripheral AND we're recording
         if peripheral == selectedPeripheral && weightService.isRecording {
-            print("Processing data from selected peripheral: \(name)")
+            //print("Processing data from selected peripheral: \(name)")
             // Get manufacturer data
             guard let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data else {
                 return
@@ -156,7 +156,7 @@ extension BluetoothManager: CBCentralManagerDelegate {
             }
             
             if let (weight, stable, _) = decodeWeight(from: scaleData) {
-                print("Processing weight: \(weight)kg (stable: \(stable))")
+                //print("Processing weight: \(weight)kg (stable: \(stable))")
                 DispatchQueue.main.async {
                     self.weightService.addMeasurement(weight)
                 }
