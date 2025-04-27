@@ -33,8 +33,8 @@ struct ContentView: View {
                         )
                     }
                     
-                    NavigationLink{
-                        ComingSoonView()
+                    NavigationLink {
+                        CriticalForceHistoryView()
                     } label: {
                         HomeButtonView(
                             title: "Critical Force",

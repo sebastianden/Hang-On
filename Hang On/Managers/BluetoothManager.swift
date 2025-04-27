@@ -21,7 +21,7 @@ class BluetoothManager: NSObject, ObservableObject {
     
     private var centralManager: CBCentralManager?
     private var selectedPeripheral: CBPeripheral?
-    private var weightService: WeightService
+    let weightService: WeightService
     
     init(weightService: WeightService) {
         self.weightService = weightService

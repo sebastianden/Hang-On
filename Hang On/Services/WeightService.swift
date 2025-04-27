@@ -23,6 +23,8 @@ class WeightService: ObservableObject {
             maxWeight = max
         }
     }
+    
+    private var subscribers: [CriticalForceService] = []
 
     func startRecording() {
         print("Starting recording")
@@ -36,20 +38,35 @@ class WeightService: ObservableObject {
         print("Stopping recording")
         isRecording = false
     }
+    
+    func addSubscriber(_ subscriber: CriticalForceService) {
+        subscribers.append(subscriber)
+    }
+
+    func removeSubscriber(_ subscriber: CriticalForceService) {
+        subscribers.removeAll { $0 === subscriber }
+    }
 
     func addMeasurement(_ weight: Double) {
         guard isRecording else {
-            print("Measurement ignored - not recording")
+            print("WeightService: Measurement ignored - not recording")
             return
         }
-        //print("Adding measurement: \(weight)")
-        let measurement = Measurement(weight: weight, timestamp: Date())
+        
+        print("WeightService: Adding measurement: \(weight), Subscribers count: \(subscribers.count)")
+        
         DispatchQueue.main.async {
             self.currentWeight = weight
-            self.measurements.append(measurement)
-            //print("Added measurement. New count: \(self.measurements.count)")
+            self.measurements.append(Measurement(weight: weight, timestamp: Date()))
+            
+            // Notify subscribers
+            for subscriber in self.subscribers {
+                print("WeightService: Notifying subscriber about measurement: \(weight)")
+                subscriber.addMeasurement(weight)
+            }
         }
     }
+
     
     func reset() {
         measurements.removeAll()
