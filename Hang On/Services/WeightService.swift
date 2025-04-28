@@ -53,8 +53,6 @@ class WeightService: ObservableObject {
             return
         }
         
-        print("WeightService: Adding measurement: \(weight), Subscribers count: \(subscribers.count)")
-        
         DispatchQueue.main.async {
             self.currentWeight = weight
             self.measurements.append(Measurement(weight: weight, timestamp: Date()))

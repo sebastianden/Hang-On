@@ -8,16 +8,16 @@
 import CoreBluetooth
 import Combine
 
+enum ConnectionState {
+    case disconnected
+    case scanning
+    case connected
+}
+
 class BluetoothManager: NSObject, ObservableObject {
     @Published var isScanning: Bool = false
     @Published var discoveredDevices: [Device] = []
     @Published var connectionState: ConnectionState = .disconnected
-    
-    enum ConnectionState {
-        case disconnected
-        case scanning
-        case connected
-    }
     
     private var centralManager: CBCentralManager?
     private var selectedPeripheral: CBPeripheral?
@@ -72,33 +72,28 @@ class BluetoothManager: NSObject, ObservableObject {
         }
     }
     
-    private func decodeWeight(from manufacturerData: Data) -> (weight: Double, stable: Int, unit: Int)? {
-        //print("Raw manufacturer data: \(manufacturerData.map { String(format: "%02X", $0) }.joined())")
+    private func decodeWeight(from advertisementData: [String: Any]) -> Double? {
+        guard let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data else {
+            return nil
+        }
         
-        guard manufacturerData.count >= 15 else {
+        // We know we have 19 bytes
+        guard manufacturerData.count >= 19 else {
             print("Manufacturer data too short")
             return nil
         }
         
-        // Print individual bytes for debugging
-        //print("Weight bytes: \(String(format: "%02X", manufacturerData[10])) \(String(format: "%02X", manufacturerData[11]))")
-        //print("Status byte: \(String(format: "%02X", manufacturerData[14]))")
-        
-        let weight = ((Int(manufacturerData[10]) & 0xff) << 8) | (Int(manufacturerData[11]) & 0xff)
-        let statusByte = manufacturerData[14]
-        let stable = Int((statusByte & 0xf0) >> 4)
-        let unit = Int(statusByte & 0x0f)
-        
-        //print("Status byte decoded: stable=\(stable) (raw: \(String(format: "%04b", stable))), unit=\(unit) (raw: \(String(format: "%04b", unit)))")
-        
+        // Looking at the changing parts around the middle
+        let weight = ((Int(manufacturerData[12]) & 0xff) << 8) | (Int(manufacturerData[13]) & 0xff)
         let weightKg = Double(weight) / 100.0
-        //print("Decoded: weight=\(weightKg)kg, stable=\(stable), unit=\(unit)")
         
-        return (weightKg, stable, unit)
+        return weightKg
     }
 }
 
 extension BluetoothManager: CBCentralManagerDelegate {
+    
+    // Called when Bluetooth state changes
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
         case .poweredOn:
@@ -119,6 +114,7 @@ extension BluetoothManager: CBCentralManagerDelegate {
         }
     }
     
+    // Called when a device is discovered
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
         guard let name = peripheral.name, name.contains("IF") else { return }
         
@@ -132,31 +128,7 @@ extension BluetoothManager: CBCentralManagerDelegate {
         
         // Only process weight data if this is our selected peripheral AND we're recording
         if peripheral == selectedPeripheral && weightService.isRecording {
-            //print("Processing data from selected peripheral: \(name)")
-            // Get manufacturer data
-            guard let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data else {
-                return
-            }
-            
-            // Convert manufacturer data to companies dictionary
-            var companies: [UInt16: Data] = [:]
-            var index = manufacturerData.startIndex
-            while index < manufacturerData.endIndex {
-                let companyID = manufacturerData[index..<min(index + 2, manufacturerData.endIndex)].withUnsafeBytes { $0.load(as: UInt16.self) }
-                index += 2
-                let length = min(manufacturerData.endIndex - index, manufacturerData.count - index)
-                let data = manufacturerData[index..<min(index + length, manufacturerData.endIndex)]
-                companies[companyID] = Data(data)
-                index += length
-            }
-            
-            // Check for company ID 256 (0x0100)
-            guard let scaleData = companies[256] else {
-                return
-            }
-            
-            if let (weight, stable, _) = decodeWeight(from: scaleData) {
-                //print("Processing weight: \(weight)kg (stable: \(stable))")
+            if let weight = decodeWeight(from: advertisementData) {
                 DispatchQueue.main.async {
                     self.weightService.addMeasurement(weight)
                 }
@@ -164,6 +136,7 @@ extension BluetoothManager: CBCentralManagerDelegate {
         }
     }
     
+    // Called when connection is established
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         print("Connected to \(peripheral.name ?? "unknown device")")
         DispatchQueue.main.async {
@@ -173,6 +146,7 @@ extension BluetoothManager: CBCentralManagerDelegate {
         startScanning()
     }
 
+    // Called when device disconnects
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         print("Disconnected from \(peripheral.name ?? "unknown device")")
         DispatchQueue.main.async {
