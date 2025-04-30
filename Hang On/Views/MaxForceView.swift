@@ -67,7 +67,9 @@ struct MaxForceView: View {
         }
         .navigationTitle("Max Force")
         .alert("Save Workout", isPresented: $showingSaveAlert) {
-            Button("Cancel", role: .cancel) { }
+            Button("Cancel", role: .cancel) {
+                weightService.reset()
+            }
             Button("Save") {
                 saveWorkout()
             }

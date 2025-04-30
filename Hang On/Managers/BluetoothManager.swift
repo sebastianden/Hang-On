@@ -1,10 +1,3 @@
-//
-//  BluetoothManager.swift
-//  Hang On
-//
-//  Created by STDG (Sebastian Dengler) on 21.04.25.
-//
-
 import CoreBluetooth
 import Combine
 
@@ -19,18 +12,19 @@ class BluetoothManager: NSObject, ObservableObject {
     @Published var discoveredDevices: [Device] = []
     @Published var connectionState: ConnectionState = .disconnected
     
-    private var centralManager: CBCentralManager?
+    private var centralManager: CBCentralManager
     private var selectedPeripheral: CBPeripheral?
     let weightService: WeightService
     
     init(weightService: WeightService) {
         self.weightService = weightService
+        self.centralManager = CBCentralManager(delegate: nil, queue: nil)
         super.init()
-        centralManager = CBCentralManager(delegate: self, queue: nil)
+        self.centralManager.delegate = self
     }
     
     func startScanning() {
-        guard centralManager?.state == .poweredOn else {
+        guard centralManager.state == .poweredOn else {
             print("Bluetooth is not powered on")
             return
         }
@@ -39,32 +33,29 @@ class BluetoothManager: NSObject, ObservableObject {
         if connectionState != .connected {
             connectionState = .scanning
         }
-        centralManager?.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
+        centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
     }
     
     func stopScanning() {
         print("Stopping scan")
         isScanning = false
-        centralManager?.stopScan()
+        centralManager.stopScan()
         if connectionState == .scanning {
             connectionState = .disconnected
         }
     }
     
     func connectToDevice(_ device: Device) {
-        guard let peripheral = device.peripheral as? CBPeripheral else { return }
         print("Attempting to connect to device: \(device.name)")
-        selectedPeripheral = peripheral
-        DispatchQueue.main.async {
-            self.connectionState = .connected
-        }
-        centralManager?.connect(peripheral, options: nil)
+        self.selectedPeripheral = device.peripheral
+        centralManager.connect(device.peripheral, options: nil)
+        self.connectionState = .connected
     }
     
     func disconnect() {
         if let peripheral = selectedPeripheral {
             print("Disconnecting from device")
-            centralManager?.cancelPeripheralConnection(peripheral)
+            centralManager.cancelPeripheralConnection(peripheral)
         }
         selectedPeripheral = nil
         DispatchQueue.main.async {
@@ -119,7 +110,7 @@ extension BluetoothManager: CBCentralManagerDelegate {
         guard let name = peripheral.name, name.contains("IF") else { return }
         
         // Add device if not already discovered
-        if !discoveredDevices.contains(where: { ($0.peripheral as? CBPeripheral)?.identifier == peripheral.identifier }) {
+        if !discoveredDevices.contains(where: { $0.peripheral.identifier == peripheral.identifier }) {
             let device = Device(name: name, peripheral: peripheral)
             DispatchQueue.main.async {
                 self.discoveredDevices.append(device)
@@ -133,25 +124,6 @@ extension BluetoothManager: CBCentralManagerDelegate {
                     self.weightService.addMeasurement(weight)
                 }
             }
-        }
-    }
-    
-    // Called when connection is established
-    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        print("Connected to \(peripheral.name ?? "unknown device")")
-        DispatchQueue.main.async {
-            self.connectionState = .connected
-        }
-        // We still need to scan for updates, but we're now in connected state
-        startScanning()
-    }
-
-    // Called when device disconnects
-    func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        print("Disconnected from \(peripheral.name ?? "unknown device")")
-        DispatchQueue.main.async {
-            self.connectionState = .disconnected
-            self.selectedPeripheral = nil
         }
     }
 }
