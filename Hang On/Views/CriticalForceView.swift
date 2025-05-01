@@ -12,11 +12,10 @@ struct CriticalForceView: View {
     @ObservedObject var bluetoothManager: BluetoothManager
     @StateObject private var criticalForceService = CriticalForceService()
     @Environment(\.dismiss) var dismiss
-    
     let selectedHand: Workout.Hand
-    
     @State private var showingSaveAlert = false
     @State private var showingEarlyFinishAlert = false
+    @State private var liveMeasurements: [CriticalForceWorkout.CycleData.CycleMeasurement] = []
     
     var body: some View {
         VStack {
@@ -24,12 +23,9 @@ struct CriticalForceView: View {
             VStack(spacing: 10) {
                 Text("Selected Hand: \(selectedHand.rawValue.capitalized)")
                     .font(.headline)
-                
                 Text("Current Force: \(String(format: "%.2f", criticalForceService.currentForce)) kg")
                     .font(.title)
-                
                 statusView
-                
                 if criticalForceService.currentState == .finished {
                     Text("Critical Force: \(String(format: "%.2f", criticalForceService.calculateCriticalForce())) kg")
                         .font(.title2)
@@ -39,10 +35,14 @@ struct CriticalForceView: View {
             .padding()
             
             // Chart Section
-            if !criticalForceService.cycles.isEmpty {
-                CriticalForceChartView(cycles: criticalForceService.cycles)
-                    .frame(height: 300)
-                    .padding()
+            if criticalForceService.currentState != .idle {
+                CriticalForceLiveChartView(
+                    measurements: liveMeasurements,
+                    criticalForce: criticalForceService.calculateCriticalForce(),
+                    currentState: criticalForceService.currentState
+                )
+                .frame(height: 300)
+                .padding()
             }
             
             // Control Buttons
@@ -53,10 +53,16 @@ struct CriticalForceView: View {
         .onAppear {
             print("CriticalForceView: View appeared")
             bluetoothManager.weightService.addSubscriber(criticalForceService)
+            criticalForceService.onNewMeasurement = { measurement in
+                DispatchQueue.main.async {
+                    self.liveMeasurements.append(measurement)
+                }
+            }
         }
         .onDisappear {
             print("CriticalForceView: View disappeared")
             bluetoothManager.weightService.removeSubscriber(criticalForceService)
+            criticalForceService.onNewMeasurement = nil
         }
         .alert("Save Workout", isPresented: $showingSaveAlert) {
             Button("Cancel", role: .cancel) { }
@@ -96,7 +102,6 @@ struct CriticalForceView: View {
                 Text("Workout Complete!")
                     .foregroundColor(.green)
             }
-            
             if criticalForceService.currentState != .idle && criticalForceService.currentState != .finished {
                 Text("Cycle \(criticalForceService.currentCycle + 1)/24")
                     .font(.subheadline)
@@ -110,8 +115,9 @@ struct CriticalForceView: View {
             case .idle:
                 Button(action: {
                     print("Starting workout...")
-                    bluetoothManager.weightService.startRecording() // Add this line
+                    bluetoothManager.weightService.startRecording()
                     criticalForceService.startWorkout()
+                    liveMeasurements.removeAll()
                 }) {
                     Text("Start Workout")
                         .font(.headline)
@@ -134,7 +140,7 @@ struct CriticalForceView: View {
             default:
                 Button(action: {
                     print("Manual workout stop requested")
-                    bluetoothManager.weightService.stopRecording() // Add this line
+                    bluetoothManager.weightService.stopRecording()
                     criticalForceService.finishWorkout()
                 }) {
                     Text("Stop")
@@ -154,28 +160,74 @@ struct CriticalForceView: View {
             hand: selectedHand,
             criticalForce: criticalForceService.calculateCriticalForce(),
             cycles: criticalForceService.cycles,
-            completedCycles: criticalForceService.currentCycle
+            completedCycles: criticalForceService.currentCycle,
+            allMeasurements: criticalForceService.allMeasurements
         )
         WorkoutStorage.shared.saveCriticalForceWorkout(workout)
-        dismiss()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            dismiss()  // dismiss with a slight delay
+        }
     }
 }
 
-// CriticalForceChartView.swift
-struct CriticalForceChartView: View {
-    let cycles: [CriticalForceWorkout.CycleData]
+struct CriticalForceLiveChartView: View {
+    let measurements: [CriticalForceWorkout.CycleData.CycleMeasurement]
+    let criticalForce: Double
+    let currentState: CriticalForceService.WorkoutState
     
     var body: some View {
         Chart {
-            ForEach(cycles) { cycle in
-                ForEach(cycle.measurements) { measurement in
-                    LineMark(
-                        x: .value("Time", measurement.timestamp),
-                        y: .value("Force", measurement.force)
-                    )
-                    .foregroundStyle(by: .value("Cycle", "Cycle \(cycle.cycleNumber)"))
+            ForEach(measurements) { measurement in
+                LineMark(
+                    x: .value("Time", measurement.timestamp),
+                    y: .value("Force", measurement.force)
+                )
+                .interpolationMethod(.stepCenter)
+            }
+            
+            if criticalForce > 0 {
+                RuleMark(
+                    y: .value("Critical Force", criticalForce)
+                )
+                .foregroundStyle(.red)
+                .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 5]))
+                .annotation(position: .top) {
+                    Text("Critical Force")
+                        .font(.caption)
+                        .foregroundColor(.red)
                 }
             }
         }
+        .chartXAxis {
+            AxisMarks(position: .bottom) { value in
+                if let date = value.as(Date.self) {
+                    AxisValueLabel {
+                        Text(date, format: .dateTime.hour().minute().second())
+                    }
+                }
+            }
+        }
+        .overlay(
+            VStack {
+                switch currentState {
+                case .working:
+                    Text("PULL!")
+                        .font(.title)
+                        .foregroundColor(.green)
+                        .padding()
+                        .background(Color.black.opacity(0.7))
+                        .cornerRadius(10)
+                case .resting:
+                    Text("REST")
+                        .font(.title)
+                        .foregroundColor(.red)
+                        .padding()
+                        .background(Color.black.opacity(0.7))
+                        .cornerRadius(10)
+                default:
+                    EmptyView()
+                }
+            }
+        )
     }
 }

@@ -14,6 +14,7 @@ struct CriticalForceWorkout: Identifiable, Codable {
     let criticalForce: Double
     let cycles: [CycleData]
     let completedCycles: Int
+    let allMeasurements: [CycleData.CycleMeasurement]  // Fixed: Use full path to CycleMeasurement
     
     struct CycleData: Identifiable, Codable {
         let id: UUID
@@ -35,12 +36,19 @@ struct CriticalForceWorkout: Identifiable, Codable {
         }
     }
     
-    init(id: UUID = UUID(), date: Date = Date(), hand: Workout.Hand, criticalForce: Double, cycles: [CycleData], completedCycles: Int) {
+    init(id: UUID = UUID(),
+         date: Date = Date(),
+         hand: Workout.Hand,
+         criticalForce: Double,
+         cycles: [CycleData],
+         completedCycles: Int,
+         allMeasurements: [CycleData.CycleMeasurement]) {
         self.id = id
         self.date = date
         self.hand = hand
         self.criticalForce = criticalForce
         self.cycles = cycles
         self.completedCycles = completedCycles
+        self.allMeasurements = allMeasurements
     }
 }

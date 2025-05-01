@@ -93,7 +93,6 @@ struct HistoryChartView: View {
                     y: .value("Force", workout.maxForce)
                 )
                 .foregroundStyle(Color.green)
-                .interpolationMethod(.catmullRom)
             }
             .symbol(by: .value("Hand", "Left"))
             
@@ -103,7 +102,6 @@ struct HistoryChartView: View {
                     y: .value("Force", workout.maxForce)
                 )
                 .foregroundStyle(Color.blue)
-                .interpolationMethod(.catmullRom)
             }
             .symbol(by: .value("Hand", "Right"))
         }
