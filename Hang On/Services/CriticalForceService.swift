@@ -21,11 +21,7 @@ class CriticalForceService: ObservableObject {
     private var audioPlayer: AVAudioPlayer?
     var onNewMeasurement: ((CriticalForceWorkout.CycleData.CycleMeasurement) -> Void)?
     
-    @Published var currentState: WorkoutState = .idle {
-        didSet {
-            print("CriticalForceService: State changed from \(oldValue) to \(currentState)")
-        }
-    }
+    @Published var currentState: WorkoutState = .idle
     
     enum WorkoutState {
         case idle
@@ -50,7 +46,6 @@ class CriticalForceService: ObservableObject {
     
     func addMeasurement(_ force: Double) {
         currentForce = force
-        print("CriticalForceService: Received force measurement: \(force), Current state: \(currentState), Threshold: \(forceThreshold)")
         
         // Create measurement object
         let measurement = CriticalForceWorkout.CycleData.CycleMeasurement(
@@ -66,25 +61,21 @@ class CriticalForceService: ObservableObject {
         onNewMeasurement?(measurement)
         
         if currentState == .waitingForForce && force >= forceThreshold {
-            print("CriticalForceService: Force threshold (\(forceThreshold)) reached with force \(force), starting work cycle")
             startWorkCycle()
         }
         
         if currentState == .working {
             measurements.append(measurement)
-            print("CriticalForceService: Added measurement during work cycle. Total measurements: \(measurements.count)")
         }
     }
     
     private func startWorkCycle() {
-        print("CriticalForceService: Starting work cycle \(currentCycle + 1)")
         currentState = .working
         timeRemaining = 7
         startTimer()
     }
     
     private func startRestCycle() {
-        print("CriticalForceService: Starting rest cycle after cycle \(currentCycle + 1)")
         // Save the current cycle's measurements
         let cycleData = CriticalForceWorkout.CycleData(
             id: UUID(),
@@ -149,8 +140,6 @@ class CriticalForceService: ObservableObject {
     
     private func updateTimer() {
         timeRemaining -= 1
-        print("CriticalForceService: Time remaining: \(timeRemaining), State: \(currentState)")
-        
         if currentState == .working {
             if timeRemaining == 3 {  // Play sound 3 seconds before work cycle ends
                 playSound()

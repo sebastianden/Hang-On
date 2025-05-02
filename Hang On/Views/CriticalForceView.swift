@@ -13,6 +13,7 @@ struct CriticalForceView: View {
     @StateObject private var criticalForceService = CriticalForceService()
     @Environment(\.dismiss) var dismiss
     let selectedHand: Workout.Hand
+    let earlyFinishThreshold: Int = 16
     @State private var showingSaveAlert = false
     @State private var showingEarlyFinishAlert = false
     @State private var liveMeasurements: [CriticalForceWorkout.CycleData.CycleMeasurement] = []
@@ -51,6 +52,7 @@ struct CriticalForceView: View {
         }
         .navigationTitle("Critical Force")
         .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = true
             print("CriticalForceView: View appeared")
             bluetoothManager.weightService.addSubscriber(criticalForceService)
             criticalForceService.onNewMeasurement = { measurement in
@@ -60,6 +62,7 @@ struct CriticalForceView: View {
             }
         }
         .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
             print("CriticalForceView: View disappeared")
             bluetoothManager.weightService.removeSubscriber(criticalForceService)
             criticalForceService.onNewMeasurement = nil
@@ -77,7 +80,7 @@ struct CriticalForceView: View {
                 showingSaveAlert = true
             }
         } message: {
-            Text("You've completed 16 cycles. Would you like to finish the workout now?")
+            Text("You've completed \(earlyFinishThreshold) cycles. Would you like to finish the workout now?")
         }
     }
     
@@ -127,6 +130,7 @@ struct CriticalForceView: View {
                         .background(Color.blue)
                         .cornerRadius(10)
                 }
+                
             case .finished:
                 Button(action: { showingSaveAlert = true }) {
                     Text("Save Workout")
@@ -137,20 +141,16 @@ struct CriticalForceView: View {
                         .background(Color.green)
                         .cornerRadius(10)
                 }
+                
             default:
-                Button(action: {
-                    print("Manual workout stop requested")
-                    bluetoothManager.weightService.stopRecording()
-                    criticalForceService.finishWorkout()
-                }) {
-                    Text("Stop")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.red)
-                        .cornerRadius(10)
-                }
+                LongPressButton(
+                    isEnabled: criticalForceService.currentCycle >= earlyFinishThreshold,
+                    action: {
+                        if criticalForceService.currentCycle >= earlyFinishThreshold {
+                            showingEarlyFinishAlert = true
+                        }
+                    }
+                )
             }
         }
     }

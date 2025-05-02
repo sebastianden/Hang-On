@@ -59,7 +59,6 @@ class WeightService: ObservableObject {
             
             // Notify subscribers
             for subscriber in self.subscribers {
-                print("WeightService: Notifying subscriber about measurement: \(weight)")
                 subscriber.addMeasurement(weight)
             }
         }

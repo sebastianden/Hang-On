@@ -66,6 +66,12 @@ struct MaxForceView: View {
             .padding()
         }
         .navigationTitle("Max Force")
+        .onAppear() {
+            UIApplication.shared.isIdleTimerDisabled = true
+        }
+        .onDisappear() {
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
         .alert("Save Workout", isPresented: $showingSaveAlert) {
             Button("Cancel", role: .cancel) {
                 weightService.reset()
