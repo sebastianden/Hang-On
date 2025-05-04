@@ -75,3 +75,50 @@ class WorkoutStorage: ObservableObject {
         }
     }
 }
+
+extension WorkoutStorage {
+    func exportData() -> URL? {
+        let backup = WorkoutBackup(
+            maxForceWorkouts: workouts,
+            criticalForceWorkouts: criticalForceWorkouts
+        )
+        
+        guard let data = try? JSONEncoder().encode(backup) else {
+            print("Failed to encode workout data")
+            return nil
+        }
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd_HHmm"
+        let fileName = "hangon_backup_\(dateFormatter.string(from: Date())).json"
+        
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let fileURL = documentsDirectory.appendingPathComponent(fileName)
+        
+        do {
+            try data.write(to: fileURL)
+            return fileURL
+        } catch {
+            print("Failed to write backup file: \(error)")
+            return nil
+        }
+    }
+    
+    func importData(from url: URL) -> Bool {
+        do {
+            let data = try Data(contentsOf: url)
+            let backup = try JSONDecoder().decode(WorkoutBackup.self, from: data)
+            
+            DispatchQueue.main.async {
+                self.workouts = backup.maxForceWorkouts
+                self.criticalForceWorkouts = backup.criticalForceWorkouts
+                self.saveToStorage()
+            }
+            
+            return true
+        } catch {
+            print("Failed to import backup: \(error)")
+            return false
+        }
+    }
+}

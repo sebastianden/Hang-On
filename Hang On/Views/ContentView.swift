@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var weightService = WeightService()
@@ -45,6 +46,8 @@ struct ContentView: View {
                 }
                 .padding()
                 
+                Spacer()
+                
                 // Connection status and button
                 Button(action: {
                     switch bluetoothManager.connectionState {
@@ -66,11 +69,13 @@ struct ContentView: View {
                     }
                     .padding()
                 }
-                .padding(.top)
-                
-                Spacer()
             }
             .navigationTitle("Hang On")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    backupControls
+                }
+            }
         }
         .environmentObject(bluetoothManager)
         .environmentObject(weightService)
@@ -182,4 +187,72 @@ struct DeviceSelectionView: View {
             .navigationTitle("Select Device")
         }
     }
+}
+
+extension ContentView {
+    @ViewBuilder
+    var backupControls: some View {
+        Menu {
+            Button(action: exportWorkouts) {
+                Label("Export Workouts", systemImage: "square.and.arrow.up")
+            }
+            
+            Button(action: importWorkouts) {
+                Label("Import Workouts", systemImage: "square.and.arrow.down")
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+        }
+    }
+    
+    private func exportWorkouts() {
+        guard let url = WorkoutStorage.shared.exportData() else {
+            // Show error alert
+            return
+        }
+        
+        let activityVC = UIActivityViewController(
+            activityItems: [url],
+            applicationActivities: nil
+        )
+        
+        // Get the current window scene
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first,
+           let rootVC = window.rootViewController {
+            activityVC.popoverPresentationController?.sourceView = rootVC.view
+            rootVC.present(activityVC, animated: true)
+        }
+    }
+    
+    private func importWorkouts() {
+        let supportedTypes: [UTType] = [.json]
+        
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: supportedTypes)
+        picker.delegate = DocumentPickerDelegate.shared
+        
+        // Get the current window scene
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first,
+           let rootVC = window.rootViewController {
+            rootVC.present(picker, animated: true)
+        }
+    }
+}
+
+// Add this class at the bottom of ContentView.swift
+class DocumentPickerDelegate: NSObject, UIDocumentPickerDelegate {
+    static let shared = DocumentPickerDelegate()
+    
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let url = urls.first else { return }
+        
+        let success = WorkoutStorage.shared.importData(from: url)
+        
+        // You might want to show a success/failure alert here
+    }
+}
+
+#Preview {
+    ContentView()
 }
