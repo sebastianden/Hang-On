@@ -175,7 +175,6 @@ class CriticalForceService: ObservableObject {
         }
     }
     
-    // Add cleanup
     deinit {
         endWarningSound?.stop()
         cycleStartSound?.stop()
