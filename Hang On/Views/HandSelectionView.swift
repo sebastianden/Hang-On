@@ -16,12 +16,15 @@ struct HandSelectionView: View {
                 .font(.title)
                 .padding()
             
-            Button(action: { onSelect(.left) }) {
-                HandButton(hand: "Left")
-            }
-            
-            Button(action: { onSelect(.right) }) {
-                HandButton(hand: "Right")
+            HStack(spacing: 10) {
+                
+                Button(action: { onSelect(.left) }) {
+                    HandButton(hand: "Left", color: .green)
+                }
+                
+                Button(action: { onSelect(.right) }) {
+                    HandButton(hand: "Right", color: .blue)
+                }
             }
         }
         .padding()
@@ -30,18 +33,21 @@ struct HandSelectionView: View {
 
 struct HandButton: View {
     let hand: String
+    let color: Color
     
     var body: some View {
         HStack {
-            Image(systemName: "hand.raised.fill")
-                .font(.system(size: 30))
             Text(hand)
                 .font(.title2)
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(Color.blue)
+        .background(color)
         .foregroundColor(.white)
-        .cornerRadius(10)
+        .cornerRadius(30)
     }
+}
+
+#Preview {
+    HandSelectionView { _ in }
 }
