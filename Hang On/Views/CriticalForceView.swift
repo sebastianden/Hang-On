@@ -13,7 +13,7 @@ struct CriticalForceView: View {
     @StateObject private var criticalForceService = CriticalForceService()
     @Environment(\.dismiss) var dismiss
     let selectedHand: Workout.Hand
-    let earlyFinishThreshold: Int = 3
+    let earlyFinishThreshold: Int = 16
     @State private var showingSaveAlert = false
     @State private var showingEarlyFinishAlert = false
     @State private var liveMeasurements: [CriticalForceWorkout.CycleData.CycleMeasurement] = []
