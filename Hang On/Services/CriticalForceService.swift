@@ -182,3 +182,36 @@ class CriticalForceService: ObservableObject {
         cycleStartSound = nil
     }
 }
+
+extension CriticalForceService {
+    func calculateWPrime() -> Double {
+        let cf = calculateCriticalForce()
+        var wPrime = 0.0
+        
+        // Get all measurements sorted by timestamp
+        let sortedMeasurements = allMeasurements.sorted { $0.timestamp < $1.timestamp }
+        
+        // We need at least two measurements to calculate the area
+        guard sortedMeasurements.count >= 2 else { return 0.0 }
+        
+        // Calculate the area above CF using trapezoidal integration
+        for i in 1..<sortedMeasurements.count {
+            let prevMeasurement = sortedMeasurements[i-1]
+            let currentMeasurement = sortedMeasurements[i]
+            
+            // Time difference in seconds
+            let dt = currentMeasurement.timestamp.timeIntervalSince(prevMeasurement.timestamp)
+            
+            // Forces above CF
+            let prevForceAboveCF = max(0, prevMeasurement.force - cf)
+            let currentForceAboveCF = max(0, currentMeasurement.force - cf)
+            
+            // Area of trapezoid
+            let area = 0.5 * (prevForceAboveCF + currentForceAboveCF) * dt
+            
+            wPrime += area
+        }
+        
+        return wPrime
+    }
+}

@@ -18,9 +18,7 @@ struct CriticalForceHistoryView: View {
     var body: some View {
         VStack {
             CriticalForceHistoryChartView(workouts: workoutStorage.criticalForceWorkouts)
-                .frame(height: 200)
                 .padding()
-            
             List {
                 ForEach(workoutStorage.criticalForceWorkouts.sorted(by: { $0.date > $1.date })) { workout in
                     CriticalForceWorkoutRow(workout: workout)
@@ -75,6 +73,43 @@ struct CriticalForceHistoryView: View {
 }
 
 struct CriticalForceHistoryChartView: View {
+    let workouts: [CriticalForceWorkout]
+    @State private var selectedMetric: Metric = .criticalForce
+    
+    enum Metric {
+        case criticalForce
+        case wPrime
+        
+        var title: String {
+            switch self {
+            case .criticalForce: return "Critical Force"
+            case .wPrime: return "W'"
+            }
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 10) {
+            Picker("Metric", selection: $selectedMetric) {
+                Text("Critical Force").tag(Metric.criticalForce)
+                Text("W'").tag(Metric.wPrime)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            
+            switch selectedMetric {
+            case .criticalForce:
+                CFChart(workouts: workouts)
+                    .frame(height: 200)
+            case .wPrime:
+                WPrimeChart(workouts: workouts)
+                    .frame(height: 200)
+            }
+        }
+    }
+}
+
+struct CFChart: View {
     let workouts: [CriticalForceWorkout]
     
     private var leftHandData: [CriticalForceWorkout] {
@@ -131,6 +166,63 @@ struct CriticalForceHistoryChartView: View {
     }
 }
 
+struct WPrimeChart: View {
+    let workouts: [CriticalForceWorkout]
+    
+    private var leftHandData: [CriticalForceWorkout] {
+        workouts.filter { $0.hand == .left }.sorted { $0.date < $1.date }
+    }
+    
+    private var rightHandData: [CriticalForceWorkout] {
+        workouts.filter { $0.hand == .right }.sorted { $0.date < $1.date }
+    }
+    
+    var body: some View {
+        Chart {
+            ForEach(leftHandData) { workout in
+                LineMark(
+                    x: .value("Date", workout.date),
+                    y: .value("W'", workout.wPrime)
+                )
+                .foregroundStyle(Color.green)
+            }
+            .symbol(by: .value("Hand", "Left"))
+            
+            ForEach(rightHandData) { workout in
+                LineMark(
+                    x: .value("Date", workout.date),
+                    y: .value("W'", workout.wPrime)
+                )
+                .foregroundStyle(Color.blue)
+            }
+            .symbol(by: .value("Hand", "Right"))
+        }
+        .chartForegroundStyleScale([
+            "Left": .green,
+            "Right": .blue
+        ])
+        .chartLegend(position: .top)
+        .chartYAxis {
+            AxisMarks(position: .leading) { value in
+                if let wPrime = value.as(Double.self) {
+                    AxisValueLabel {
+                        Text(String(format: "%.0f kg⋅s", wPrime))
+                    }
+                }
+            }
+        }
+        .chartXAxis {
+            AxisMarks(values: .stride(by: .day)) { value in
+                if let date = value.as(Date.self) {
+                    AxisValueLabel {
+                        Text(date, format: .dateTime.month().day())
+                    }
+                }
+            }
+        }
+    }
+}
+
 struct CriticalForceWorkoutRow: View {
     let workout: CriticalForceWorkout
     
@@ -138,12 +230,13 @@ struct CriticalForceWorkoutRow: View {
         VStack(alignment: .leading) {
             Text(workout.date.formatted(date: .long, time: .shortened))
                 .font(.headline)
-            
             HStack {
                 HandBadgeView(hand: workout.hand)
                 Spacer()
                 VStack(alignment: .trailing) {
-                    Text(String(format: "%.1f kg", workout.criticalForce))
+                    Text("CF: \(String(format: "%.1f kg", workout.criticalForce))")
+                        .bold()
+                    Text("W': \(String(format: "%.0f kg⋅s", workout.wPrime))")
                         .bold()
                     Text("\(workout.completedCycles)/24 cycles")
                         .font(.caption)
