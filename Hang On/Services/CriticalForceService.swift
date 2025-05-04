@@ -18,7 +18,8 @@ class CriticalForceService: ObservableObject {
     
     let forceThreshold: Double = 5.0
     private var timer: Timer?
-    private var audioPlayer: AVAudioPlayer?
+    private var endWarningSound: AVAudioPlayer?
+    private var cycleStartSound: AVAudioPlayer?
     var onNewMeasurement: ((CriticalForceWorkout.CycleData.CycleMeasurement) -> Void)?
     
     @Published var currentState: WorkoutState = .idle
@@ -117,32 +118,46 @@ class CriticalForceService: ObservableObject {
             try AVAudioSession.sharedInstance().setCategory(
                 .playback,
                 mode: .default,
-                options: [.mixWithOthers]  // Add these options
+                options: [.mixWithOthers]
             )
             try AVAudioSession.sharedInstance().setActive(true)
             
-            guard let soundURL = Bundle.main.url(forResource: "sound", withExtension: "mp3") else {
-                print("Sound file not found")
-                return
+            // Setup end warning sound
+            if let endWarningSoundURL = Bundle.main.url(forResource: "end", withExtension: "mp3") {
+                endWarningSound = try AVAudioPlayer(contentsOf: endWarningSoundURL)
+                endWarningSound?.prepareToPlay()
+            } else {
+                print("End warning sound file not found")
             }
             
-            audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
-            audioPlayer?.prepareToPlay()
+            // Setup cycle start sound
+            if let cycleStartSoundURL = Bundle.main.url(forResource: "start", withExtension: "mp3") {
+                cycleStartSound = try AVAudioPlayer(contentsOf: cycleStartSoundURL)
+                cycleStartSound?.prepareToPlay()
+            } else {
+                print("Cycle start sound file not found")
+            }
+            
         } catch {
             print("Failed to setup audio session: \(error.localizedDescription)")
         }
     }
     
-    private func playSound() {
-        audioPlayer?.currentTime = 0
-        audioPlayer?.play()
+    private func playEndWarningSound() {
+        endWarningSound?.currentTime = 0
+        endWarningSound?.play()
+    }
+    
+    private func playCycleStartSound() {
+        cycleStartSound?.currentTime = 0
+        cycleStartSound?.play()
     }
     
     private func updateTimer() {
         timeRemaining -= 1
         if currentState == .working {
             if timeRemaining == 3 {  // Play sound 3 seconds before work cycle ends
-                playSound()
+                playEndWarningSound()
             }
             if timeRemaining <= 0 {
                 startRestCycle()
@@ -154,6 +169,7 @@ class CriticalForceService: ObservableObject {
                     finishWorkout()
                 } else {
                     currentState = .waitingForForce
+                    playCycleStartSound()
                 }
             }
         }
@@ -161,7 +177,9 @@ class CriticalForceService: ObservableObject {
     
     // Add cleanup
     deinit {
-        audioPlayer?.stop()
-        audioPlayer = nil
+        endWarningSound?.stop()
+        cycleStartSound?.stop()
+        endWarningSound = nil
+        cycleStartSound = nil
     }
 }
