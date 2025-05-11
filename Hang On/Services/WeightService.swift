@@ -19,7 +19,7 @@ class WeightService: ObservableObject {
     @Published var isRecording: Bool = false
 
     private func updateMaxWeight() {
-        if let max = measurements.map({ $0.weight }).max() {
+        if let max = measurements.map({ $0.force }).max() {
             maxWeight = max
         }
     }
@@ -55,7 +55,7 @@ class WeightService: ObservableObject {
         
         DispatchQueue.main.async {
             self.currentWeight = weight
-            self.measurements.append(Measurement(weight: weight, timestamp: Date()))
+            self.measurements.append(Measurement(id: UUID(), force: weight, timestamp: Date()))
             
             // Notify subscribers
             for subscriber in self.subscribers {

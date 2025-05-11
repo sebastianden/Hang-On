@@ -7,8 +7,8 @@
 
 import Foundation
 
-struct Measurement: Identifiable {
-    let id = UUID()
-    let weight: Double
+struct Measurement: Identifiable, Codable {
+    let id: UUID
+    let force: Double
     let timestamp: Date
 }

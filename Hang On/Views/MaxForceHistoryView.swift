@@ -8,27 +8,27 @@
 import SwiftUI
 import Charts
 
-struct WorkoutHistoryView: View {
+struct MaxForceHistoryView: View {
     @StateObject private var workoutStorage = WorkoutStorage.shared
     @State private var showingHandSelection = false
-    @State private var selectedHand: Workout.Hand?
+    @State private var selectedHand: Hand?
     @EnvironmentObject var bluetoothManager: BluetoothManager
     @EnvironmentObject var weightService: WeightService
     
     var body: some View {
         VStack {
-            HistoryChartView(workouts: workoutStorage.workouts)
+            HistoryChartView(workouts: workoutStorage.maxForceWorkouts)
                 .frame(height: 200)
                 .padding()
             
             List {
-                ForEach(workoutStorage.workouts.sorted(by: { $0.date > $1.date })) { workout in
+                ForEach(workoutStorage.maxForceWorkouts.sorted(by: { $0.date > $1.date })) { workout in
                     WorkoutRow(workout: workout)
                 }
                 .onDelete { indexSet in
                     for index in indexSet {
-                        let workout = workoutStorage.workouts.sorted(by: { $0.date > $1.date })[index]
-                        workoutStorage.deleteWorkout(workout)
+                        let workout = workoutStorage.maxForceWorkouts.sorted(by: { $0.date > $1.date })[index]
+                        workoutStorage.deleteMaxForceWorkout(workout)
                     }
                 }
             }
@@ -69,13 +69,13 @@ struct WorkoutHistoryView: View {
 }
 
 struct HistoryChartView: View {
-    let workouts: [Workout]
+    let workouts: [MaxForceWorkout]
     
-    private var leftHandData: [Workout] {
+    private var leftHandData: [MaxForceWorkout] {
         workouts.filter { $0.hand == .left }.sorted { $0.date < $1.date }
     }
     
-    private var rightHandData: [Workout] {
+    private var rightHandData: [MaxForceWorkout] {
         workouts.filter { $0.hand == .right }.sorted { $0.date < $1.date }
     }
     
@@ -133,7 +133,7 @@ struct HistoryChartView: View {
 }
 
 struct WorkoutRow: View {
-    let workout: Workout
+    let workout: MaxForceWorkout
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -151,7 +151,7 @@ struct WorkoutRow: View {
 }
 
 struct HandBadgeView: View {
-    let hand: Workout.Hand
+    let hand: Hand
     
     var backgroundColor: Color {
         switch hand {

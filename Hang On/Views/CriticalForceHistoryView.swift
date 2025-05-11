@@ -11,7 +11,7 @@ import Charts
 struct CriticalForceHistoryView: View {
     @StateObject private var workoutStorage = WorkoutStorage.shared
     @State private var showingHandSelection = false
-    @State private var selectedHand: Workout.Hand?
+    @State private var selectedHand: Hand?
     @EnvironmentObject var bluetoothManager: BluetoothManager
     @State private var selectedWorkout: CriticalForceWorkout?
     
@@ -253,7 +253,7 @@ struct CriticalForceDetailView: View {
     @Environment(\.dismiss) var dismiss
     
     // Use allMeasurements directly instead of computing it
-    private var sortedMeasurements: [CriticalForceWorkout.CycleData.CycleMeasurement] {
+    private var sortedMeasurements: [Measurement] {
         workout.allMeasurements.sorted { $0.timestamp < $1.timestamp }
     }
     

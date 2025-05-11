@@ -1,5 +1,5 @@
 //
-//  Workout.swift
+//  MaxForceWorkout.swift
 //  Hang On
 //
 //  Created by STDG (Sebastian Dengler) on 26.04.25.
@@ -7,16 +7,11 @@
 
 import Foundation
 
-struct Workout: Identifiable, Codable {
+struct MaxForceWorkout: Workout {
     let id: UUID
     let date: Date
     let hand: Hand
     let maxForce: Double
-    
-    enum Hand: String, Codable {
-        case left
-        case right
-    }
     
     init(id: UUID = UUID(), date: Date = Date(), hand: Hand, maxForce: Double) {
         self.id = id

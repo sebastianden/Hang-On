@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct HandSelectionView: View {
-    let onSelect: (Workout.Hand) -> Void
+    let onSelect: (Hand) -> Void
     
     var body: some View {
         VStack(spacing: 20) {

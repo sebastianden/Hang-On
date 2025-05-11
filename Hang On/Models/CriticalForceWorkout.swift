@@ -7,29 +7,23 @@
 
 import Foundation
 
-struct CriticalForceWorkout: Identifiable, Codable {
+struct CriticalForceWorkout: Workout {
     let id: UUID
     let date: Date
-    let hand: Workout.Hand
+    let hand: Hand
     let criticalForce: Double
     let wPrime: Double
     let cycles: [CycleData]
     let completedCycles: Int
-    let allMeasurements: [CycleData.CycleMeasurement]
+    let allMeasurements: [Measurement]
     
     struct CycleData: Identifiable, Codable {
         let id: UUID
         let cycleNumber: Int
-        let measurements: [CycleMeasurement]
+        let measurements: [Measurement]
         let averageForce: Double
         
-        struct CycleMeasurement: Identifiable, Codable {
-            let id: UUID
-            let timestamp: Date
-            let force: Double
-        }
-        
-        init(id: UUID = UUID(), cycleNumber: Int, measurements: [CycleMeasurement]) {
+        init(id: UUID = UUID(), cycleNumber: Int, measurements: [Measurement]) {
             self.id = id
             self.cycleNumber = cycleNumber
             self.measurements = measurements
@@ -39,12 +33,12 @@ struct CriticalForceWorkout: Identifiable, Codable {
     
     init(id: UUID = UUID(),
          date: Date = Date(),
-         hand: Workout.Hand,
+         hand: Hand,
          criticalForce: Double,
          wPrime: Double,
          cycles: [CycleData],
          completedCycles: Int,
-         allMeasurements: [CycleData.CycleMeasurement]) {
+         allMeasurements: [Measurement]) {
         self.id = id
         self.date = date
         self.hand = hand

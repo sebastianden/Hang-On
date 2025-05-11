@@ -12,11 +12,11 @@ struct CriticalForceView: View {
     @ObservedObject var bluetoothManager: BluetoothManager
     @StateObject private var criticalForceService = CriticalForceService()
     @Environment(\.dismiss) var dismiss
-    let selectedHand: Workout.Hand
+    let selectedHand: Hand
     let earlyFinishThreshold: Int = 16
     @State private var showingSaveAlert = false
     @State private var showingEarlyFinishAlert = false
-    @State private var liveMeasurements: [CriticalForceWorkout.CycleData.CycleMeasurement] = []
+    @State private var liveMeasurements: [Measurement] = []
     
     var body: some View {
         VStack {
@@ -34,13 +34,32 @@ struct CriticalForceView: View {
                 }
             }
             .padding()
-            
+  
             // Chart Section
             if criticalForceService.currentState != .idle {
-                CriticalForceLiveChartView(
-                    measurements: liveMeasurements,
-                    criticalForce: criticalForceService.calculateCriticalForce(),
-                    currentState: criticalForceService.currentState
+                // TODO: critical force shouldn't be calculated every time
+                LiveChart(measurements: liveMeasurements, criticalForce: criticalForceService.calculateCriticalForce())
+                .overlay(
+                    VStack {
+                        switch criticalForceService.currentState {
+                        case .working:
+                            Text("PULL!")
+                                .font(.title)
+                                .foregroundColor(.green)
+                                .padding()
+                                .background(Color.black.opacity(0.7))
+                                .cornerRadius(10)
+                        case .resting:
+                            Text("REST")
+                                .font(.title)
+                                .foregroundColor(.red)
+                                .padding()
+                                .background(Color.black.opacity(0.7))
+                                .cornerRadius(10)
+                        default:
+                            EmptyView()
+                        }
+                    }
                 )
                 .frame(height: 300)
                 .padding()
@@ -168,67 +187,5 @@ struct CriticalForceView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             dismiss()
         }
-    }
-}
-
-struct CriticalForceLiveChartView: View {
-    let measurements: [CriticalForceWorkout.CycleData.CycleMeasurement]
-    let criticalForce: Double
-    let currentState: CriticalForceService.WorkoutState
-    
-    var body: some View {
-        Chart {
-            ForEach(measurements) { measurement in
-                LineMark(
-                    x: .value("Time", measurement.timestamp),
-                    y: .value("Force", measurement.force)
-                )
-                .interpolationMethod(.stepCenter)
-            }
-            
-            if criticalForce > 0 {
-                RuleMark(
-                    y: .value("Critical Force", criticalForce)
-                )
-                .foregroundStyle(.red)
-                .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 5]))
-                .annotation(position: .top) {
-                    Text("Critical Force")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                }
-            }
-        }
-        .chartXAxis {
-            AxisMarks(position: .bottom) { value in
-                if let date = value.as(Date.self) {
-                    AxisValueLabel {
-                        Text(date, format: .dateTime.hour().minute().second())
-                    }
-                }
-            }
-        }
-        .overlay(
-            VStack {
-                switch currentState {
-                case .working:
-                    Text("PULL!")
-                        .font(.title)
-                        .foregroundColor(.green)
-                        .padding()
-                        .background(Color.black.opacity(0.7))
-                        .cornerRadius(10)
-                case .resting:
-                    Text("REST")
-                        .font(.title)
-                        .foregroundColor(.red)
-                        .padding()
-                        .background(Color.black.opacity(0.7))
-                        .cornerRadius(10)
-                default:
-                    EmptyView()
-                }
-            }
-        )
     }
 }

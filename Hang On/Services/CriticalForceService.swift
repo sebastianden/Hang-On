@@ -12,15 +12,15 @@ class CriticalForceService: ObservableObject {
     @Published var currentCycle: Int = 0
     @Published var timeRemaining: Int = 0
     @Published var currentForce: Double = 0
-    @Published var measurements: [CriticalForceWorkout.CycleData.CycleMeasurement] = []
+    @Published var measurements: [Measurement] = []
     @Published var cycles: [CriticalForceWorkout.CycleData] = []
-    @Published var allMeasurements: [CriticalForceWorkout.CycleData.CycleMeasurement] = []
+    @Published var allMeasurements: [Measurement] = []
     
     let forceThreshold: Double = 5.0
     private var timer: Timer?
     private var endWarningSound: AVAudioPlayer?
     private var cycleStartSound: AVAudioPlayer?
-    var onNewMeasurement: ((CriticalForceWorkout.CycleData.CycleMeasurement) -> Void)?
+    var onNewMeasurement: ((Measurement) -> Void)?
     
     @Published var currentState: WorkoutState = .idle
     
@@ -49,10 +49,10 @@ class CriticalForceService: ObservableObject {
         currentForce = force
         
         // Create measurement object
-        let measurement = CriticalForceWorkout.CycleData.CycleMeasurement(
+        let measurement = Measurement(
             id: UUID(),
-            timestamp: Date(),
-            force: force
+            force: force,
+            timestamp: Date()
         )
         
         // Store all measurements

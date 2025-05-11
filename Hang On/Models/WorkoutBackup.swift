@@ -8,11 +8,11 @@
 import Foundation
 
 struct WorkoutBackup: Codable {
-    let maxForceWorkouts: [Workout]
+    let maxForceWorkouts: [MaxForceWorkout]
     let criticalForceWorkouts: [CriticalForceWorkout]
     let exportDate: Date
     
-    init(maxForceWorkouts: [Workout], criticalForceWorkouts: [CriticalForceWorkout]) {
+    init(maxForceWorkouts: [MaxForceWorkout], criticalForceWorkouts: [CriticalForceWorkout]) {
         self.maxForceWorkouts = maxForceWorkouts
         self.criticalForceWorkouts = criticalForceWorkouts
         self.exportDate = Date()

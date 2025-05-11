@@ -13,7 +13,7 @@ struct MaxForceView: View {
     @ObservedObject var weightService: WeightService
     @Environment(\.dismiss) var dismiss
     
-    let selectedHand: Workout.Hand
+    let selectedHand: Hand
     
     @State private var showingSaveAlert = false
     @State private var isRecording = false
@@ -36,15 +36,7 @@ struct MaxForceView: View {
                     .foregroundColor(.gray)
                     .padding()
             } else {
-                Chart(weightService.measurements) { measurement in
-                    LineMark(
-                        x: .value("Time", measurement.timestamp),
-                        y: .value("Weight", measurement.weight)
-                    )
-                    .interpolationMethod(.stepCenter)
-                }
-                .frame(height: 300)
-                .padding()
+                LiveChart(measurements: weightService.measurements)
             }
             
             Button(action: {
@@ -96,11 +88,11 @@ struct MaxForceView: View {
     }
     
     private func saveWorkout() {
-        let workout = Workout(
+        let workout = MaxForceWorkout(
             hand: selectedHand,
             maxForce: weightService.maxWeight
         )
-        WorkoutStorage.shared.saveWorkout(workout)
+        WorkoutStorage.shared.saveMaxForceWorkout(workout)
         weightService.reset()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             dismiss()  // dismiss with a slight delay

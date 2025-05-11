@@ -25,9 +25,9 @@ struct ContentView: View {
                 // Main navigation buttons
                 VStack(spacing: 30) {
                     NavigationLink {
-                        WorkoutHistoryView()
+                        MaxForceHistoryView()
                     } label: {
-                        HomeButtonView(
+                        WorkoutButton(
                             title: "Max Force",
                             icon: "chart.bar.fill",
                             description: "Measure your maximum finger strength"
@@ -37,7 +37,7 @@ struct ContentView: View {
                     NavigationLink {
                         CriticalForceHistoryView()
                     } label: {
-                        HomeButtonView(
+                        WorkoutButton(
                             title: "Critical Force",
                             icon: "bolt.fill",
                             description: "Measure your critical force"
@@ -114,81 +114,6 @@ struct ContentView: View {
     }
 }
 
-struct HomeButtonView: View {
-    let title: String
-    let icon: String
-    let description: String
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(title)
-                    .font(.title2)
-                    .bold()
-                Text(description)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            Spacer()
-            Image(systemName: icon)
-                .font(.system(size: 30))
-                .foregroundColor(.blue)
-        }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(radius: 2)
-    }
-}
-
-struct ComingSoonView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "hammer.fill")
-                .font(.system(size: 60))
-                .padding()
-            Text("Coming Soon!")
-                .font(.title)
-            Text("We're working hard to bring you this feature.")
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding()
-        }
-        .navigationTitle("Critical Force")
-    }
-}
-
-struct DeviceSelectionView: View {
-    let devices: [Device]
-    let isScanning: Bool
-    let onDeviceSelected: (Device) -> Void
-    
-    var body: some View {
-        NavigationView {
-            List {
-                if devices.isEmpty {
-                    if isScanning {
-                        HStack {
-                            ProgressView()
-                            Text("Scanning for devices...")
-                        }
-                    } else {
-                        Text("No devices found")
-                    }
-                } else {
-                    ForEach(devices) { device in
-                        Button(action: { onDeviceSelected(device) }) {
-                            Text(device.name)
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Select Device")
-        }
-    }
-}
-
 extension ContentView {
     @ViewBuilder
     var backupControls: some View {
@@ -240,7 +165,7 @@ extension ContentView {
     }
 }
 
-// Add this class at the bottom of ContentView.swift
+
 class DocumentPickerDelegate: NSObject, UIDocumentPickerDelegate {
     static let shared = DocumentPickerDelegate()
     
