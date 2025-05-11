@@ -17,7 +17,7 @@ struct MaxForceHistoryView: View {
     
     var body: some View {
         VStack {
-            HistoryChartView(workouts: workoutStorage.maxForceWorkouts)
+            HistoricalChart(workouts: workoutStorage.maxForceWorkouts)
                 .frame(height: 200)
                 .padding()
             
@@ -68,69 +68,6 @@ struct MaxForceHistoryView: View {
     }
 }
 
-struct HistoryChartView: View {
-    let workouts: [MaxForceWorkout]
-    
-    private var leftHandData: [MaxForceWorkout] {
-        workouts.filter { $0.hand == .left }.sorted { $0.date < $1.date }
-    }
-    
-    private var rightHandData: [MaxForceWorkout] {
-        workouts.filter { $0.hand == .right }.sorted { $0.date < $1.date }
-    }
-    
-    private var maxForce: Double {
-        let maxLeft = leftHandData.map { $0.maxForce }.max() ?? 0
-        let maxRight = rightHandData.map { $0.maxForce }.max() ?? 0
-        return max(maxLeft, maxRight)
-    }
-    
-    var body: some View {
-        Chart {
-            ForEach(leftHandData) { workout in
-                LineMark(
-                    x: .value("Date", workout.date),
-                    y: .value("Force", workout.maxForce)
-                )
-                .foregroundStyle(Color.green)
-            }
-            .symbol(by: .value("Hand", "Left"))
-            
-            ForEach(rightHandData) { workout in
-                LineMark(
-                    x: .value("Date", workout.date),
-                    y: .value("Force", workout.maxForce)
-                )
-                .foregroundStyle(Color.blue)
-            }
-            .symbol(by: .value("Hand", "Right"))
-        }
-        .chartYScale(domain: 0...(maxForce * 1.1))
-        .chartForegroundStyleScale([
-            "Left": .green,
-            "Right": .blue
-        ])
-        .chartLegend(position: .top)
-        .chartYAxis {
-            AxisMarks(position: .leading) { value in
-                if let force = value.as(Double.self) {
-                    AxisValueLabel {
-                        Text(String(format: "%.0f kg", force))
-                    }
-                }
-            }
-        }
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .day)) { value in
-                if let date = value.as(Date.self) {
-                    AxisValueLabel {
-                        Text(date, format: .dateTime.month().day())
-                    }
-                }
-            }
-        }
-    }
-}
 
 struct WorkoutRow: View {
     let workout: MaxForceWorkout

@@ -49,3 +49,23 @@ struct CriticalForceWorkout: Workout {
         self.allMeasurements = allMeasurements
     }
 }
+
+extension CriticalForceWorkout: PlottableWorkout {
+    typealias ValueType = Double
+    var plotValue: Double { criticalForce }
+    static var yAxisLabel: String { "Critical Force" }
+    static var yAxisFormat: String { "%.0f kg" }
+}
+
+struct WPrimeWorkout: PlottableWorkout {
+    typealias ValueType = Double
+    let workout: CriticalForceWorkout
+    
+    var id: UUID { workout.id }
+    var date: Date { workout.date }
+    var hand: Hand { workout.hand }
+    var plotValue: Double { workout.wPrime }
+    
+    static var yAxisLabel: String { "W'" }
+    static var yAxisFormat: String { "%.0f kg⋅s" }
+}

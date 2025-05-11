@@ -20,3 +20,10 @@ struct MaxForceWorkout: Workout {
         self.maxForce = maxForce
     }
 }
+
+extension MaxForceWorkout: PlottableWorkout {
+    typealias ValueType = Double
+    var plotValue: Double { maxForce }
+    static var yAxisLabel: String { "Force" }
+    static var yAxisFormat: String { "%.0f kg" }
+}
