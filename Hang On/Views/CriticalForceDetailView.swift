@@ -43,8 +43,11 @@ struct CriticalForceDetailView: View {
                                     .bold()
                             }
                         }
-                        Text("Hand: \(workout.hand.rawValue.capitalized)")
-                            .foregroundColor(.secondary)
+                        VStack(alignment: .leading) {
+                            Text("Hand")
+                                .foregroundColor(.secondary)
+                            HandBadgeView(hand: workout.hand)
+                        }
                     }
                     .padding()
                     .background(Color(.systemBackground))
