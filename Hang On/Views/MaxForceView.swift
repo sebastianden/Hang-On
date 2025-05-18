@@ -20,16 +20,29 @@ struct MaxForceView: View {
     
     var body: some View {
         VStack {
-            Text("Selected Hand: \(selectedHand.rawValue.capitalized)")
-                .font(.headline)
-                .padding()
+            HStack {
+                Text("Selected Hand:")
+                    .font(.headline)
+                    .padding()
+                HandBadgeView(hand: selectedHand)
+            }
             
-            Text("Current Force: \(String(format: "%.2f", weightService.currentWeight)) kg")
-                .font(.title)
-            
-            Text("Max Force: \(String(format: "%.2f", weightService.maxWeight)) kg")
-                .font(.title2)
-                .foregroundColor(.secondary)
+            HStack {
+                VStack {
+                    Text("Current")
+                        .font(.title2)
+                    Text("\(String(format: "%.2f", weightService.currentWeight)) kg")
+                        .font(.title).bold()
+                }.padding()
+                
+                VStack {
+                    Text("Max")
+                        .font(.title2)
+                    Text("\(String(format: "%.2f", weightService.maxWeight)) kg")
+                        .font(.title).bold()
+                }.padding()
+                
+            }
             
             if weightService.measurements.isEmpty {
                 Text("No measurements yet")

@@ -131,6 +131,7 @@ struct LiveChart: View {
                 }
             }
         }
+        .chartYScale(domain: 0...max(20, (measurements.map { $0.force }.max() ?? 20)))
         .chartXScale(domain: viewModel.currentTimeRange() ?? 0...5)
         .frame(height: 300)
         .padding()
