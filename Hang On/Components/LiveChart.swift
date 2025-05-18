@@ -90,62 +90,6 @@ class LiveChartViewModel: ObservableObject {
     }
 }
 
-/*
-struct LiveChart: View {
-    @StateObject private var viewModel = LiveChartViewModel()
-    let measurements: [Measurement]
-    let criticalForce: Double?
-    
-    init(measurements: [Measurement], criticalForce: Double? = nil) {
-        self.measurements = measurements
-        self.criticalForce = criticalForce
-    }
-    
-    var body: some View {
-        Chart(viewModel.displayMeasurements) { measurement in
-            LineMark(
-                x: .value("Time", measurement.timestamp),
-                y: .value("Force", measurement.force)
-            )
-            .interpolationMethod(.stepCenter)
-            
-            if let cf = criticalForce, cf > 0 {
-                RuleMark(
-                    y: .value("Critical Force", cf)
-                )
-                .foregroundStyle(.red)
-                .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 5]))
-                .annotation(position: .top) {
-                    Text("Critical Force")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                }
-            }
-        }
-        .chartXAxis {
-            AxisMarks(values: .stride(by: 1)) { value in
-                AxisGridLine()
-                AxisValueLabel {
-                    if let date = value.as(Date.self),
-                       let startTime = viewModel.getWorkoutStartTime() {
-                        Text("\(Int(date.timeIntervalSince(startTime)))s")
-                    }
-                }
-            }
-        }
-        .chartXScale(domain: Date().addingTimeInterval(-5)...Date())
-        .frame(height: 300)
-        .padding()
-        .onAppear {
-            viewModel.updateMeasurements(measurements)
-        }
-        .onChange(of: measurements) { _, newMeasurements in
-            viewModel.updateMeasurements(newMeasurements)
-        }
-    }
-}
-*/
-
 struct LiveChart: View {
     @StateObject private var viewModel = LiveChartViewModel()
     let measurements: [Measurement]
