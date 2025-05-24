@@ -25,8 +25,12 @@ struct CriticalForceView: View {
         VStack {
             // Status Section
             VStack(spacing: 10) {
-                Text("Selected Hand: \(selectedHand.rawValue.capitalized)")
-                    .font(.headline)
+                HStack {
+                    Text("Selected Hand:")
+                        .font(.headline)
+                        .padding()
+                    HandBadgeView(hand: selectedHand)
+                }
                 Text("Current Force: \(String(format: "%.2f", criticalForceService.currentForce)) kg")
                     .font(.title)
                 VStack {
@@ -58,7 +62,7 @@ struct CriticalForceView: View {
                                 .background(Color.black.opacity(0.7))
                                 .cornerRadius(10)
                         case .resting:
-                            Text("REST")
+                            Text("REST \(criticalForceService.timeRemaining)s")
                                 .font(.title)
                                 .foregroundColor(.red)
                                 .padding()
