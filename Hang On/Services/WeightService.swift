@@ -66,9 +66,11 @@ class WeightService: ObservableObject {
 
     
     func reset() {
-        measurements.removeAll()
-        maxWeight = 0.0
-        currentWeight = 0.0
-        isRecording = false
+        DispatchQueue.main.async {
+            self.measurements.removeAll()
+            self.maxWeight = 0.0
+            self.currentWeight = 0.0
+            self.isRecording = false
+        }
     }
 }

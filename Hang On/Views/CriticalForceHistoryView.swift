@@ -11,8 +11,8 @@ import Charts
 struct CriticalForceHistoryView: View {
     @StateObject private var workoutStorage = WorkoutStorage.shared
     @State private var showingSetup = false
-    @State private var selectedWorkout: CriticalForceWorkout?
-    @State private var workoutToStart: CriticalForceWorkout?
+    @State private var isShowingWorkout = false
+    @State private var workoutToShow: CriticalForceWorkout?
     @State private var showingWorkoutDetail: CriticalForceWorkout?
     @State private var selectedMetric: Metric = .criticalForce
     @State private var showRelative = false
@@ -128,12 +128,16 @@ struct CriticalForceHistoryView: View {
             CriticalForceDetailView(workout: workout)
         }
         .navigationDestination(isPresented: Binding(
-            get: { workoutToStart != nil },
-            set: { if !$0 { workoutToStart = nil }}
+            get: { workoutToShow != nil },
+            set: { if !$0 { workoutToShow = nil }}
         )) {
-            if let workout = workoutToStart {
+            if let workout = workoutToShow {
                 CriticalForceView(
                     bluetoothManager: bluetoothManager,
+                    isPresented: Binding(
+                        get: { workoutToShow != nil },
+                        set: { if !$0 { workoutToShow = nil }}
+                    ),
                     selectedHand: workout.hand,
                     bodyweight: workout.bodyweight
                 )
@@ -142,7 +146,7 @@ struct CriticalForceHistoryView: View {
     }
     
     private func navigateToWorkout(hand: Hand, bodyweight: Double) {
-        workoutToStart = CriticalForceWorkout(
+        workoutToShow = CriticalForceWorkout(
             hand: hand,
             criticalForce: 0,
             wPrime: 0,
@@ -151,6 +155,7 @@ struct CriticalForceHistoryView: View {
             allMeasurements: [],
             bodyweight: bodyweight
         )
+        isShowingWorkout = true
     }
 }
 

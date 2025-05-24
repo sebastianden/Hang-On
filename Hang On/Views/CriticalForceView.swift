@@ -11,7 +11,7 @@ import Charts
 struct CriticalForceView: View {
     @ObservedObject var bluetoothManager: BluetoothManager
     @StateObject private var criticalForceService = CriticalForceService()
-    @Environment(\.dismiss) var dismiss
+    @Binding var isPresented: Bool
     let selectedHand: Hand
     let bodyweight: Double
     let earlyFinishThreshold: Int = 16
@@ -116,9 +116,8 @@ struct CriticalForceView: View {
         .alert("Stop Workout", isPresented: $showingWorkoutCancelAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Stop") {
-                dismiss()
+                isPresented = false
             }
-
         } message: {
             Text("Are you sure you want to cancel the workout?")
         }
@@ -208,9 +207,13 @@ struct CriticalForceView: View {
             allMeasurements: criticalForceService.allMeasurements,
             bodyweight: bodyweight
         )
-        WorkoutStorage.shared.saveCriticalForceWorkout(workout)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            dismiss()
+        
+        // First dismiss the view
+        isPresented = false
+        
+        // Then cleanup state in the next run loop
+        DispatchQueue.main.async {
+            WorkoutStorage.shared.saveCriticalForceWorkout(workout)
         }
     }
 }
@@ -218,6 +221,7 @@ struct CriticalForceView: View {
 #Preview {
     CriticalForceView(
         bluetoothManager: BluetoothManager(weightService: WeightService()),
+        isPresented: .constant(true),
         selectedHand: .right,
         bodyweight: 70.0
     )

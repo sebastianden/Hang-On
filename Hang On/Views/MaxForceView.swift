@@ -11,7 +11,7 @@ import Charts
 struct MaxForceView: View {
     @ObservedObject var bluetoothManager: BluetoothManager
     @ObservedObject var weightService: WeightService
-    @Environment(\.dismiss) var dismiss
+    @Binding var isPresented: Bool
     
     let selectedHand: Hand
     let bodyweight: Double
@@ -132,10 +132,14 @@ struct MaxForceView: View {
             maxForce: weightService.maxWeight,
             bodyweight: bodyweight
         )
-        WorkoutStorage.shared.saveMaxForceWorkout(workout)
-        weightService.reset()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            dismiss()  // dismiss with a slight delay
+        
+        // First dismiss the view
+        isPresented = false
+        
+        // Then cleanup state in the next run loop
+        DispatchQueue.main.async {
+            WorkoutStorage.shared.saveMaxForceWorkout(workout)
+            self.weightService.reset()
         }
     }
 }
@@ -144,6 +148,7 @@ struct MaxForceView: View {
     MaxForceView(
         bluetoothManager: BluetoothManager(weightService: WeightService()),
         weightService: WeightService(),
+        isPresented: .constant(true),
         selectedHand: .right,
         bodyweight: 70.0
     )

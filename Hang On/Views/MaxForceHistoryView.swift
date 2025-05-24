@@ -11,7 +11,8 @@ import Charts
 struct MaxForceHistoryView: View {
     @StateObject private var workoutStorage = WorkoutStorage.shared
     @State private var showingSetup = false
-    @State private var selectedWorkout: MaxForceWorkout?
+    @State private var isShowingWorkout = false
+    @State private var workoutToShow: MaxForceWorkout?
     @State private var showRelative = false
     @EnvironmentObject var bluetoothManager: BluetoothManager
     @EnvironmentObject var weightService: WeightService
@@ -78,14 +79,12 @@ struct MaxForceHistoryView: View {
                 navigateToWorkout(hand: hand, bodyweight: weight)
             }
         }
-        .navigationDestination(isPresented: Binding(
-            get: { selectedWorkout != nil },
-            set: { if !$0 { selectedWorkout = nil }}
-        )) {
-            if let workout = selectedWorkout {
+        .navigationDestination(isPresented: $isShowingWorkout) {
+            if let workout = workoutToShow {
                 MaxForceView(
                     bluetoothManager: bluetoothManager,
                     weightService: weightService,
+                    isPresented: $isShowingWorkout,
                     selectedHand: workout.hand,
                     bodyweight: workout.bodyweight
                 )
@@ -94,11 +93,12 @@ struct MaxForceHistoryView: View {
     }
     
     private func navigateToWorkout(hand: Hand, bodyweight: Double) {
-        selectedWorkout = MaxForceWorkout(
+        workoutToShow = MaxForceWorkout(
             hand: hand,
             maxForce: 0,
             bodyweight: bodyweight
         )
+        isShowingWorkout = true
     }
 }
 
