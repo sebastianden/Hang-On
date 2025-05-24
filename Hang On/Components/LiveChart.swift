@@ -106,7 +106,7 @@ struct LiveChart: View {
                 x: .value("Time", viewModel.elapsedSeconds(for: measurement)),
                 y: .value("Force", measurement.force)
             )
-            .interpolationMethod(.stepCenter)
+            .interpolationMethod(.stepEnd)
             
             if let cf = criticalForce, cf > 0 {
                 RuleMark(
