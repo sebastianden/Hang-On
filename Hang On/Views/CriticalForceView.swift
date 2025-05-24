@@ -17,6 +17,7 @@ struct CriticalForceView: View {
     let earlyFinishThreshold: Int = 16
     @State private var showingSaveAlert = false
     @State private var showingEarlyFinishAlert = false
+    @State private var showingWorkoutCancelAlert = false
     @State private var showingDeviceSheet = false
     @State private var liveMeasurements: [Measurement] = []
     
@@ -28,7 +29,12 @@ struct CriticalForceView: View {
                     .font(.headline)
                 Text("Current Force: \(String(format: "%.2f", criticalForceService.currentForce)) kg")
                     .font(.title)
-                statusView
+                VStack {
+                    if criticalForceService.currentState != .idle && criticalForceService.currentState != .finished {
+                        Text("Cycle \(criticalForceService.currentCycle + 1)/24")
+                            .font(.subheadline)
+                    }
+                }
                 if criticalForceService.currentState == .finished {
                     Text("Critical Force: \(String(format: "%.2f", criticalForceService.calculateCriticalForce())) kg")
                         .font(.title2)
@@ -45,7 +51,7 @@ struct CriticalForceView: View {
                     VStack {
                         switch criticalForceService.currentState {
                         case .working:
-                            Text("PULL!")
+                            Text("PULL \(criticalForceService.timeRemaining)s")
                                 .font(.title)
                                 .foregroundColor(.green)
                                 .padding()
@@ -103,6 +109,15 @@ struct CriticalForceView: View {
         } message: {
             Text("You've completed \(earlyFinishThreshold) cycles. Would you like to finish the workout now?")
         }
+        .alert("Stop Workout", isPresented: $showingWorkoutCancelAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Stop") {
+                dismiss()
+            }
+
+        } message: {
+            Text("Are you sure you want to cancel the workout?")
+        }
         .sheet(isPresented: $showingDeviceSheet) {
             DeviceSelectionView(
                 devices: bluetoothManager.discoveredDevices,
@@ -121,34 +136,6 @@ struct CriticalForceView: View {
                 if bluetoothManager.connectionState != .connected {
                     bluetoothManager.stopScanning()
                 }
-            }
-        }
-    }
-    
-    private var statusView: some View {
-        VStack {
-            switch criticalForceService.currentState {
-            case .idle:
-                Text("Ready to start")
-                    .foregroundColor(.secondary)
-            case .waitingForForce:
-                Text("Pull to start cycle \(criticalForceService.currentCycle + 1)")
-                    .foregroundColor(.blue)
-            case .working:
-                Text("PULL! \(criticalForceService.timeRemaining)s")
-                    .foregroundColor(.green)
-                    .font(.title)
-            case .resting:
-                Text("Rest \(criticalForceService.timeRemaining)s")
-                    .foregroundColor(.red)
-                    .font(.title)
-            case .finished:
-                Text("Workout Complete!")
-                    .foregroundColor(.green)
-            }
-            if criticalForceService.currentState != .idle && criticalForceService.currentState != .finished {
-                Text("Cycle \(criticalForceService.currentCycle + 1)/24")
-                    .font(.subheadline)
             }
         }
     }
@@ -186,10 +173,13 @@ struct CriticalForceView: View {
                 
             default:
                 LongPressButton(
-                    isEnabled: criticalForceService.currentCycle >= earlyFinishThreshold,
+                    isEnabled: true,
                     action: {
                         if criticalForceService.currentCycle >= earlyFinishThreshold {
                             showingEarlyFinishAlert = true
+                        }
+                        else {
+                            showingWorkoutCancelAlert = true
                         }
                     }
                 )

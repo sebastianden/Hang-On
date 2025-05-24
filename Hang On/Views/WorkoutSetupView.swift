@@ -10,7 +10,6 @@ import SwiftUI
 struct WorkoutSetupView: View {
     @State private var bodyweight: String = ""
     @State private var selectedHand: Hand?
-    @FocusState private var isBodyweightFocused: Bool
     let onComplete: (Hand, Double) -> Void
     @Environment(\.dismiss) var dismiss
     
@@ -63,17 +62,21 @@ struct WorkoutSetupView: View {
                     HStack {
                         TextField("Enter your bodyweight", text: $bodyweight)
                             .keyboardType(.decimalPad)
-                            .focused($isBodyweightFocused)
                             .onChange(of: bodyweight) { _, newValue in
-                                // Only allow numbers and one decimal point
-                                let filtered = newValue.filter { "0123456789.".contains($0) }
+                                let decimalSeparator = Locale.current.decimalSeparator ?? "."
+                                
+                                // Only allow numbers and one decimal separator
+                                let filtered = newValue.filter { 
+                                    $0.isNumber || String($0) == decimalSeparator
+                                }
                                 if filtered != newValue {
                                     bodyweight = filtered
                                 }
-                                // Ensure only one decimal point
-                                let components = filtered.components(separatedBy: ".")
+                                
+                                // Ensure only one decimal separator
+                                let components = filtered.components(separatedBy: decimalSeparator)
                                 if components.count > 2 {
-                                    bodyweight = components[0] + "." + components[1]
+                                    bodyweight = components[0] + decimalSeparator + components[1]
                                 }
                             }
                         Text("kg")
@@ -82,7 +85,11 @@ struct WorkoutSetupView: View {
                 
                 Section {
                     Button("Start Workout") {
-                        if let weight = Double(bodyweight), let hand = selectedHand {
+                        let formatter = NumberFormatter()
+                        formatter.locale = .current
+                        formatter.numberStyle = .decimal
+                        if let weight = formatter.number(from: bodyweight)?.doubleValue,
+                           let hand = selectedHand {
                             onComplete(hand, weight)
                             dismiss()
                         }
@@ -101,9 +108,6 @@ struct WorkoutSetupView: View {
                 }
             }
             .submitLabel(.done)
-            .onSubmit {
-                isBodyweightFocused = false
-            }
         }
     }
 }
