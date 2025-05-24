@@ -16,6 +16,7 @@ struct CriticalForceView: View {
     let earlyFinishThreshold: Int = 16
     @State private var showingSaveAlert = false
     @State private var showingEarlyFinishAlert = false
+    @State private var showingDeviceSheet = false
     @State private var liveMeasurements: [Measurement] = []
     
     var body: some View {
@@ -101,6 +102,26 @@ struct CriticalForceView: View {
         } message: {
             Text("You've completed \(earlyFinishThreshold) cycles. Would you like to finish the workout now?")
         }
+        .sheet(isPresented: $showingDeviceSheet) {
+            DeviceSelectionView(
+                devices: bluetoothManager.discoveredDevices,
+                isScanning: bluetoothManager.isScanning,
+                onDeviceSelected: { device in
+                    bluetoothManager.connectToDevice(device)
+                    showingDeviceSheet = false
+                    // Start workout after successful connection
+                    startWorkout()
+                }
+            )
+            .onAppear {
+                bluetoothManager.startScanning()
+            }
+            .onDisappear {
+                if bluetoothManager.connectionState != .connected {
+                    bluetoothManager.stopScanning()
+                }
+            }
+        }
     }
     
     private var statusView: some View {
@@ -136,10 +157,11 @@ struct CriticalForceView: View {
             switch criticalForceService.currentState {
             case .idle:
                 Button(action: {
-                    print("Starting workout...")
-                    bluetoothManager.weightService.startRecording()
-                    criticalForceService.startWorkout()
-                    liveMeasurements.removeAll()
+                    if bluetoothManager.connectionState == .connected {
+                        startWorkout()
+                    } else {
+                        showingDeviceSheet = true
+                    }
                 }) {
                     Text("Start Workout")
                         .font(.headline)
@@ -174,6 +196,13 @@ struct CriticalForceView: View {
         }
     }
     
+    private func startWorkout() {
+        print("Starting workout...")
+        bluetoothManager.weightService.startRecording()
+        criticalForceService.startWorkout()
+        liveMeasurements.removeAll()
+    }
+    
     private func saveWorkout() {
         let workout = CriticalForceWorkout(
             hand: selectedHand,
@@ -188,4 +217,11 @@ struct CriticalForceView: View {
             dismiss()
         }
     }
+}
+
+#Preview {
+    CriticalForceView(
+        bluetoothManager: BluetoothManager(weightService: WeightService()),
+        selectedHand: .right
+    )
 }

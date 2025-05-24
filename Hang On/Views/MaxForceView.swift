@@ -17,6 +17,7 @@ struct MaxForceView: View {
     
     @State private var showingSaveAlert = false
     @State private var isRecording = false
+    @State private var showingDeviceSheet = false
     
     var body: some View {
         VStack {
@@ -57,7 +58,11 @@ struct MaxForceView: View {
                     stopRecording()
                     showingSaveAlert = true
                 } else {
-                    startRecording()
+                    if bluetoothManager.connectionState == .connected {
+                        startRecording()
+                    } else {
+                        showingDeviceSheet = true
+                    }
                 }
             }) {
                 Text(isRecording ? "Finish" : "Start Recording")
@@ -87,6 +92,26 @@ struct MaxForceView: View {
         } message: {
             Text("Do you want to save this workout?")
         }
+        .sheet(isPresented: $showingDeviceSheet) {
+            DeviceSelectionView(
+                devices: bluetoothManager.discoveredDevices,
+                isScanning: bluetoothManager.isScanning,
+                onDeviceSelected: { device in
+                    bluetoothManager.connectToDevice(device)
+                    showingDeviceSheet = false
+                    // Start recording after successful connection
+                    startRecording()
+                }
+            )
+            .onAppear {
+                bluetoothManager.startScanning()
+            }
+            .onDisappear {
+                if bluetoothManager.connectionState != .connected {
+                    bluetoothManager.stopScanning()
+                }
+            }
+        }
         .interactiveDismissDisabled(isRecording)
     }
     
@@ -111,4 +136,12 @@ struct MaxForceView: View {
             dismiss()  // dismiss with a slight delay
         }
     }
+}
+
+#Preview {
+    MaxForceView(
+        bluetoothManager: BluetoothManager(weightService: WeightService()),
+        weightService: WeightService(),
+        selectedHand: .right
+    )
 }

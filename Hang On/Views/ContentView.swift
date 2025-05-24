@@ -9,7 +9,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ContentView: View {
-    @StateObject private var weightService = WeightService()
+    @StateObject private var weightService: WeightService
     @StateObject private var bluetoothManager: BluetoothManager
     @State private var showingDeviceSheet = false
     
