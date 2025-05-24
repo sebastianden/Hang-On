@@ -13,6 +13,7 @@ struct CriticalForceView: View {
     @StateObject private var criticalForceService = CriticalForceService()
     @Environment(\.dismiss) var dismiss
     let selectedHand: Hand
+    let bodyweight: Double
     let earlyFinishThreshold: Int = 16
     @State private var showingSaveAlert = false
     @State private var showingEarlyFinishAlert = false
@@ -210,7 +211,8 @@ struct CriticalForceView: View {
             wPrime: criticalForceService.calculateWPrime(),
             cycles: criticalForceService.cycles,
             completedCycles: criticalForceService.currentCycle,
-            allMeasurements: criticalForceService.allMeasurements
+            allMeasurements: criticalForceService.allMeasurements,
+            bodyweight: bodyweight
         )
         WorkoutStorage.shared.saveCriticalForceWorkout(workout)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -222,6 +224,7 @@ struct CriticalForceView: View {
 #Preview {
     CriticalForceView(
         bluetoothManager: BluetoothManager(weightService: WeightService()),
-        selectedHand: .right
+        selectedHand: .right,
+        bodyweight: 70.0
     )
 }

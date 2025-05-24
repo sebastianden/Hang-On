@@ -8,8 +8,7 @@
 import Charts
 
 protocol PlottableWorkout: Workout {
-    associatedtype ValueType: BinaryFloatingPoint & Plottable
-    var plotValue: ValueType { get }
+    var plotValue: Double { get }
     static var yAxisLabel: String { get }
     static var yAxisFormat: String { get }
 }

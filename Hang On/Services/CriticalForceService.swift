@@ -15,14 +15,13 @@ class CriticalForceService: ObservableObject {
     @Published var measurements: [Measurement] = []
     @Published var cycles: [CriticalForceWorkout.CycleData] = []
     @Published var allMeasurements: [Measurement] = []
+    @Published var currentState: WorkoutState = .idle
     
     let forceThreshold: Double = 5.0
     private var timer: Timer?
     private var endWarningSound: AVAudioPlayer?
     private var cycleStartSound: AVAudioPlayer?
     var onNewMeasurement: ((Measurement) -> Void)?
-    
-    @Published var currentState: WorkoutState = .idle
     
     enum WorkoutState {
         case idle

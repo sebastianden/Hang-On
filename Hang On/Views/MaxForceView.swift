@@ -14,6 +14,7 @@ struct MaxForceView: View {
     @Environment(\.dismiss) var dismiss
     
     let selectedHand: Hand
+    let bodyweight: Double
     
     @State private var showingSaveAlert = false
     @State private var isRecording = false
@@ -128,7 +129,8 @@ struct MaxForceView: View {
     private func saveWorkout() {
         let workout = MaxForceWorkout(
             hand: selectedHand,
-            maxForce: weightService.maxWeight
+            maxForce: weightService.maxWeight,
+            bodyweight: bodyweight
         )
         WorkoutStorage.shared.saveMaxForceWorkout(workout)
         weightService.reset()
@@ -142,6 +144,7 @@ struct MaxForceView: View {
     MaxForceView(
         bluetoothManager: BluetoothManager(weightService: WeightService()),
         weightService: WeightService(),
-        selectedHand: .right
+        selectedHand: .right,
+        bodyweight: 70.0
     )
 }

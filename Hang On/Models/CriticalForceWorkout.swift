@@ -16,6 +16,7 @@ struct CriticalForceWorkout: Workout {
     let cycles: [CycleData]
     let completedCycles: Int
     let allMeasurements: [Measurement]
+    let bodyweight: Double
     
     struct CycleData: Identifiable, Codable {
         let id: UUID
@@ -38,7 +39,8 @@ struct CriticalForceWorkout: Workout {
          wPrime: Double,
          cycles: [CycleData],
          completedCycles: Int,
-         allMeasurements: [Measurement]) {
+         allMeasurements: [Measurement],
+         bodyweight: Double) {
         self.id = id
         self.date = date
         self.hand = hand
@@ -47,18 +49,20 @@ struct CriticalForceWorkout: Workout {
         self.cycles = cycles
         self.completedCycles = completedCycles
         self.allMeasurements = allMeasurements
+        self.bodyweight = bodyweight
     }
 }
 
 extension CriticalForceWorkout: PlottableWorkout {
-    typealias ValueType = Double
     var plotValue: Double { criticalForce }
+    var plotValueRelative: Double { (criticalForce / bodyweight) * 100 }
     static var yAxisLabel: String { "Critical Force" }
+    static var yAxisLabelRelative: String { "Critical Force (% of bodyweight)" }
     static var yAxisFormat: String { "%.0f kg" }
+    static var yAxisFormatRelative: String { "%.0f%%" }
 }
 
 struct WPrimeWorkout: PlottableWorkout {
-    typealias ValueType = Double
     let workout: CriticalForceWorkout
     
     var id: UUID { workout.id }

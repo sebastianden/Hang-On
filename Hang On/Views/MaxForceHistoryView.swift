@@ -10,20 +10,46 @@ import Charts
 
 struct MaxForceHistoryView: View {
     @StateObject private var workoutStorage = WorkoutStorage.shared
-    @State private var showingHandSelection = false
-    @State private var selectedHand: Hand?
+    @State private var showingSetup = false
+    @State private var selectedWorkout: MaxForceWorkout?
+    @State private var showRelative = false
     @EnvironmentObject var bluetoothManager: BluetoothManager
     @EnvironmentObject var weightService: WeightService
     
     var body: some View {
         VStack {
-            HistoricalChart(workouts: workoutStorage.maxForceWorkouts)
-                .frame(height: 200)
-                .padding()
+            VStack(spacing: 16) {
+                HStack {
+                    Picker("Metric", selection: $showRelative) {
+                        Text("Abs").tag(false)
+                        Text("% BW").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                }
+                
+                if showRelative {
+                    HistoricalChart(
+                        workouts: workoutStorage.maxForceWorkouts,
+                        valueProvider: { $0.plotValueRelative },
+                        yAxisLabel: MaxForceWorkout.yAxisLabelRelative,
+                        yAxisFormat: MaxForceWorkout.yAxisFormatRelative
+                    )
+                    .frame(height: 200)
+                } else {
+                    HistoricalChart(
+                        workouts: workoutStorage.maxForceWorkouts,
+                        valueProvider: { $0.plotValue },
+                        yAxisLabel: MaxForceWorkout.yAxisLabel,
+                        yAxisFormat: MaxForceWorkout.yAxisFormat
+                    )
+                    .frame(height: 200)
+                }
+            }
+            .padding()
             
             List {
                 ForEach(workoutStorage.maxForceWorkouts.sorted(by: { $0.date > $1.date })) { workout in
-                    WorkoutRow(workout: workout)
+                    WorkoutRow(workout: workout, showRelative: showRelative)
                 }
                 .onDelete { indexSet in
                     for index in indexSet {
@@ -34,7 +60,7 @@ struct MaxForceHistoryView: View {
             }
             
             Button(action: {
-                showingHandSelection = true
+                showingSetup = true
             }) {
                 Text("Start New Measurement")
                     .font(.headline)
@@ -46,31 +72,39 @@ struct MaxForceHistoryView: View {
             }
             .padding()
         }
-        .navigationTitle("Workout History")
-        .sheet(isPresented: $showingHandSelection) {
-            HandSelectionView { hand in
-                selectedHand = hand
-                showingHandSelection = false
+        .navigationTitle("Max Force History")
+        .sheet(isPresented: $showingSetup) {
+            WorkoutSetupView { hand, weight in
+                navigateToWorkout(hand: hand, bodyweight: weight)
             }
         }
         .navigationDestination(isPresented: Binding(
-            get: { selectedHand != nil },
-            set: { if !$0 { selectedHand = nil }}
+            get: { selectedWorkout != nil },
+            set: { if !$0 { selectedWorkout = nil }}
         )) {
-            if let hand = selectedHand {
+            if let workout = selectedWorkout {
                 MaxForceView(
                     bluetoothManager: bluetoothManager,
                     weightService: weightService,
-                    selectedHand: hand
+                    selectedHand: workout.hand,
+                    bodyweight: workout.bodyweight
                 )
             }
         }
     }
+    
+    private func navigateToWorkout(hand: Hand, bodyweight: Double) {
+        selectedWorkout = MaxForceWorkout(
+            hand: hand,
+            maxForce: 0,
+            bodyweight: bodyweight
+        )
+    }
 }
-
 
 struct WorkoutRow: View {
     let workout: MaxForceWorkout
+    let showRelative: Bool
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -79,8 +113,21 @@ struct WorkoutRow: View {
             HStack {
                 HandBadgeView(hand: workout.hand)
                 Spacer()
-                Text(String(format: "%.1f kg", workout.maxForce))
-                    .bold()
+                VStack(alignment: .trailing) {
+                    if showRelative {
+                        Text(String(format: "%.0f%% BW", workout.plotValueRelative))
+                            .bold()
+                        Text("\(String(format: "%.1f kg", workout.bodyweight)) BW")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text(String(format: "%.1f kg", workout.maxForce))
+                            .bold()
+                        Text("\(String(format: "%.1f kg", workout.bodyweight)) BW")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
         }
         .padding(.vertical, 4)

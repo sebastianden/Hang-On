@@ -10,22 +10,92 @@ import Charts
 
 struct CriticalForceHistoryView: View {
     @StateObject private var workoutStorage = WorkoutStorage.shared
-    @State private var showingHandSelection = false
-    @State private var selectedHand: Hand?
-    @EnvironmentObject var bluetoothManager: BluetoothManager
+    @State private var showingSetup = false
     @State private var selectedWorkout: CriticalForceWorkout?
+    @State private var workoutToStart: CriticalForceWorkout?
+    @State private var showingWorkoutDetail: CriticalForceWorkout?
+    @State private var selectedMetric: Metric = .criticalForce
+    @State private var showRelative = false
+    @EnvironmentObject var bluetoothManager: BluetoothManager
+    
+    enum Metric: String {
+        case criticalForce = "CF"
+        case wPrime = "W'"
+        
+        var valueProvider: (CriticalForceWorkout) -> Double {
+            switch self {
+            case .criticalForce: return { $0.criticalForce }
+            case .wPrime: return { $0.wPrime }
+            }
+        }
+        
+        var relativeValueProvider: (CriticalForceWorkout) -> Double {
+            switch self {
+            case .criticalForce: return { $0.criticalForce / $0.bodyweight * 100 }
+            case .wPrime: return { $0.wPrime / $0.bodyweight }
+            }
+        }
+        
+        var yAxisLabel: String {
+            switch self {
+            case .criticalForce: return "Critical Force (kg)"
+            case .wPrime: return "W' (kg⋅s)"
+            }
+        }
+        
+        var relativeYAxisLabel: String {
+            switch self {
+            case .criticalForce: return "Critical Force (% BW)"
+            case .wPrime: return "W' (BW⋅s)"
+            }
+        }
+        
+        var format: String {
+            switch self {
+            case .criticalForce: return "%.1f"
+            case .wPrime: return "%.0f"
+            }
+        }
+    }
     
     var body: some View {
         VStack {
-            CriticalForceHistoryChartView(workouts: workoutStorage.criticalForceWorkouts)
-                .padding()
+            VStack(spacing: 16) {
+                HStack {
+                    Picker("Metric", selection: $selectedMetric) {
+                        Text(Metric.criticalForce.rawValue).tag(Metric.criticalForce)
+                        Text(Metric.wPrime.rawValue).tag(Metric.wPrime)
+                    }
+                    .pickerStyle(.segmented)
+                    
+                    Picker("Unit", selection: $showRelative) {
+                        Text("Abs").tag(false)
+                        Text("% BW").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                }
+                
+                HistoricalChart(
+                    workouts: workoutStorage.criticalForceWorkouts,
+                    valueProvider: showRelative ? selectedMetric.relativeValueProvider : selectedMetric.valueProvider,
+                    yAxisLabel: showRelative ? selectedMetric.relativeYAxisLabel : selectedMetric.yAxisLabel,
+                    yAxisFormat: selectedMetric.format
+                )
+                .frame(height: 200)
+            }
+            .padding()
+            
             List {
                 ForEach(workoutStorage.criticalForceWorkouts.sorted(by: { $0.date > $1.date })) { workout in
-                    CriticalForceWorkoutRow(workout: workout)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            selectedWorkout = workout
-                        }
+                    CriticalForceWorkoutRow(
+                        workout: workout,
+                        showRelativeCF: showRelative && selectedMetric == .criticalForce,
+                        showRelativeWPrime: showRelative && selectedMetric == .wPrime
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        showingWorkoutDetail = workout
+                    }
                 }
                 .onDelete { indexSet in
                     for index in indexSet {
@@ -36,7 +106,7 @@ struct CriticalForceHistoryView: View {
             }
             
             Button(action: {
-                showingHandSelection = true
+                showingSetup = true
             }) {
                 Text("Start New Assessment")
                     .font(.headline)
@@ -49,69 +119,45 @@ struct CriticalForceHistoryView: View {
             .padding()
         }
         .navigationTitle("Critical Force History")
-        .sheet(isPresented: $showingHandSelection) {
-            HandSelectionView { hand in
-                selectedHand = hand
-                showingHandSelection = false
+        .sheet(isPresented: $showingSetup) {
+            WorkoutSetupView { hand, weight in
+                navigateToWorkout(hand: hand, bodyweight: weight)
             }
         }
-        .sheet(item: $selectedWorkout) { workout in
+        .sheet(item: $showingWorkoutDetail) { workout in
             CriticalForceDetailView(workout: workout)
         }
         .navigationDestination(isPresented: Binding(
-            get: { selectedHand != nil },
-            set: { if !$0 { selectedHand = nil }}
+            get: { workoutToStart != nil },
+            set: { if !$0 { workoutToStart = nil }}
         )) {
-            if let hand = selectedHand {
+            if let workout = workoutToStart {
                 CriticalForceView(
                     bluetoothManager: bluetoothManager,
-                    selectedHand: hand
+                    selectedHand: workout.hand,
+                    bodyweight: workout.bodyweight
                 )
             }
         }
     }
-}
-
-struct CriticalForceHistoryChartView: View {
-    let workouts: [CriticalForceWorkout]
-    @State private var selectedMetric: Metric = .criticalForce
     
-    enum Metric {
-        case criticalForce
-        case wPrime
-        
-        var title: String {
-            switch self {
-            case .criticalForce: return "Critical Force"
-            case .wPrime: return "W'"
-            }
-        }
-    }
-    
-    var body: some View {
-        VStack(spacing: 10) {
-            Picker("Metric", selection: $selectedMetric) {
-                Text("Critical Force").tag(Metric.criticalForce)
-                Text("W'").tag(Metric.wPrime)
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
-            
-            switch selectedMetric {
-            case .criticalForce:
-                HistoricalChart(workouts: workouts)
-                    .frame(height: 200)
-            case .wPrime:
-                HistoricalChart(workouts: workouts.map(WPrimeWorkout.init))
-                    .frame(height: 200)
-            }
-        }
+    private func navigateToWorkout(hand: Hand, bodyweight: Double) {
+        workoutToStart = CriticalForceWorkout(
+            hand: hand,
+            criticalForce: 0,
+            wPrime: 0,
+            cycles: [],
+            completedCycles: 0,
+            allMeasurements: [],
+            bodyweight: bodyweight
+        )
     }
 }
-
 
 struct CriticalForceWorkoutRow: View {
     let workout: CriticalForceWorkout
+    let showRelativeCF: Bool
+    let showRelativeWPrime: Bool
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -121,11 +167,21 @@ struct CriticalForceWorkoutRow: View {
                 HandBadgeView(hand: workout.hand)
                 Spacer()
                 VStack(alignment: .trailing) {
-                    Text("CF: \(String(format: "%.1f kg", workout.criticalForce))")
-                        .bold()
-                    Text("W': \(String(format: "%.0f kg⋅s", workout.wPrime))")
-                        .bold()
-                    Text("\(workout.completedCycles)/24 cycles")
+                    if showRelativeCF {
+                        Text("CF: \(String(format: "%.0f%% BW", workout.criticalForce / workout.bodyweight * 100))")
+                            .bold()
+                    } else {
+                        Text("CF: \(String(format: "%.1f kg", workout.criticalForce))")
+                            .bold()
+                    }
+                    if showRelativeWPrime {
+                        Text("W': \(String(format: "%.1f BW⋅s", workout.wPrime / workout.bodyweight))")
+                            .bold()
+                    } else {
+                        Text("W': \(String(format: "%.0f kg⋅s", workout.wPrime))")
+                            .bold()
+                    }
+                    Text("\(workout.completedCycles)/24 cycles • \(String(format: "%.1f kg", workout.bodyweight)) BW")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
